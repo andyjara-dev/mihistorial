@@ -1,0 +1,63 @@
+# Docker Compose simplificado (sin Nginx)
+# Uso: docker-compose -f docker-compose.simple.yml up -d
+# Ideal para desarrollo o VPS sin dominio
+
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: health-tracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: healthtracker
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-this-password}
+      POSTGRES_DB: health_tracker
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - health-tracker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthtracker -d health_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación Next.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: health-tracker-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://healthtracker:${DB_PASSWORD:-change-this-password}@postgres:5432/health_tracker
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      MASTER_ENCRYPTION_KEY: ${MASTER_ENCRYPTION_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - health-tracker-network
+    command: sh -c "npx prisma migrate deploy && npm start"
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  health-tracker-network:
+    driver: bridge

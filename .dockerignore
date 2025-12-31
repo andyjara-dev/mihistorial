@@ -1,0 +1,32 @@
+# Archivos a ignorar en build de Docker
+
+.git
+.gitignore
+.env
+.env.*
+!.env.production
+
+node_modules
+npm-debug.log
+yarn-error.log
+
+.next
+out
+build
+
+README.md
+DEPLOYMENT.md
+DEPLOY-RAILWAY.md
+INICIO-RAPIDO.md
+
+.vscode
+.idea
+
+uploads
+*.log
+
+.DS_Store
+Thumbs.db
+
+# Mantener prisma para generar el cliente
+!prisma

@@ -39,3 +39,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/app/generated/prisma
+
+# uploads (archivos médicos encriptados)
+/uploads
+
+# Docker
+*.tar.gz
+docker-compose.override.yml
+
+# Backups
+/backups
+
+# SSL certificates
+/ssl
+*.key
+*.crt
+*.pem
+!nginx.conf
