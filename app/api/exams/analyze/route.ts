@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { extractTextFromPDF, processExamWithAI } from '@/lib/ai-processor'
+import { prisma } from '@/lib/prisma'
 
 /**
  * Endpoint para analizar un PDF y extraer información básica antes de guardarlo
@@ -57,6 +58,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Obtener datos del usuario para validar que el PDF es del paciente
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { firstName: true, lastName: true }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Validar que el PDF sea del paciente
+    const isValidPatient = await validatePatientInPDF(pdfText, user.firstName, user.lastName)
+
+    if (!isValidPatient) {
+      return NextResponse.json(
+        {
+          error: 'El PDF no corresponde a tu nombre. Solo puedes subir exámenes médicos a tu propio nombre.',
+          details: `Se esperaba encontrar: ${user.firstName} ${user.lastName}`
+        },
+        { status: 403 }
+      )
+    }
+
     // Procesar con IA para extraer metadatos
     // Usamos un prompt especial para extraer solo la información básica
     const extractedData = await extractMetadata(pdfText)
@@ -73,6 +100,67 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * Valida que el PDF contenga el nombre del paciente
+ */
+async function validatePatientInPDF(
+  pdfText: string,
+  firstName: string,
+  lastName: string
+): Promise<boolean> {
+  // Normalizar el texto del PDF (quitar acentos, convertir a minúsculas)
+  const normalizeText = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+      .replace(/[^a-z0-9\s]/g, ' ') // Reemplazar caracteres especiales por espacios
+      .replace(/\s+/g, ' ') // Normalizar espacios múltiples
+      .trim()
+  }
+
+  const normalizedPdfText = normalizeText(pdfText)
+  const normalizedFirstName = normalizeText(firstName)
+  const normalizedLastName = normalizeText(lastName)
+  const normalizedFullName = `${normalizedFirstName} ${normalizedLastName}`
+
+  // Buscar diferentes variaciones del nombre
+  const patterns = [
+    // Nombre completo
+    normalizedFullName,
+    // Apellido, Nombre
+    `${normalizedLastName} ${normalizedFirstName}`,
+    // Solo buscar que ambos aparezcan cerca (dentro de 100 caracteres)
+    // Esto captura casos donde el nombre está en líneas diferentes
+  ]
+
+  // Verificar si algún patrón coincide
+  for (const pattern of patterns) {
+    if (normalizedPdfText.includes(pattern)) {
+      return true
+    }
+  }
+
+  // Verificar que ambos (nombre y apellido) aparezcan en el texto
+  // aunque no estén juntos (más flexible)
+  const hasFirstName = normalizedPdfText.includes(normalizedFirstName)
+  const hasLastName = normalizedPdfText.includes(normalizedLastName)
+
+  if (hasFirstName && hasLastName) {
+    // Verificar que estén relativamente cerca uno del otro
+    const firstNameIndex = normalizedPdfText.indexOf(normalizedFirstName)
+    const lastNameIndex = normalizedPdfText.indexOf(normalizedLastName)
+    const distance = Math.abs(firstNameIndex - lastNameIndex)
+
+    // Si están dentro de 200 caracteres, consideramos que es el mismo paciente
+    if (distance < 200) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**

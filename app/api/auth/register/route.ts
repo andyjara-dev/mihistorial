@@ -6,12 +6,20 @@ import { createVerificationToken, sendVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, recaptchaToken } = await request.json()
+    const { email, password, firstName, lastName, recaptchaToken } = await request.json()
 
     // Validación básica
-    if (!email || !password) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
-        { error: 'Email y contraseña son requeridos' },
+        { error: 'Email, contraseña, nombre y apellido son requeridos' },
+        { status: 400 }
+      )
+    }
+
+    // Validar que nombre y apellido no estén vacíos
+    if (firstName.trim().length < 2 || lastName.trim().length < 2) {
+      return NextResponse.json(
+        { error: 'El nombre y apellido deben tener al menos 2 caracteres' },
         { status: 400 }
       )
     }
@@ -72,14 +80,17 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         password: hashedPassword,
-        name: name || null,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`, // Para compatibilidad
         encryptionKey,
         emailVerified: null, // Email no verificado inicialmente
       },
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         createdAt: true,
       },
     })

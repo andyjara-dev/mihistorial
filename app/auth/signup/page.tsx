@@ -8,7 +8,8 @@ import ReCAPTCHA from 'react-google-recaptcha'
 export default function SignUpPage() {
   const router = useRouter()
   const recaptchaRef = useRef<ReCAPTCHA>(null)
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -50,7 +51,8 @@ export default function SignUpPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name,
+          firstName,
+          lastName,
           email,
           password,
           recaptchaToken,
@@ -100,15 +102,32 @@ export default function SignUpPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
-              Nombre (opcional)
+            <label htmlFor="firstName" className="block text-gray-700 font-medium mb-2">
+              Nombre *
             </label>
             <input
               type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
+              required
+              placeholder="Tu nombre"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="lastName" className="block text-gray-700 font-medium mb-2">
+              Apellido *
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
+              required
+              placeholder="Tu apellido"
             />
           </div>
 
