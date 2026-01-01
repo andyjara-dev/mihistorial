@@ -12,6 +12,41 @@ Guía completa para instalar Health Tracker en tu propio VPS usando Docker.
 
 ---
 
+## 📊 ¿Cómo funciona la Base de Datos con Prisma?
+
+Health Tracker usa **Prisma** como ORM (Object-Relational Mapping). Aquí está lo que necesitas saber:
+
+### Base de Datos Incluida
+- Docker Compose incluye un contenedor PostgreSQL listo para usar
+- **No necesitas instalar PostgreSQL** en tu servidor
+- La base de datos se crea automáticamente al ejecutar `docker-compose up`
+
+### Migraciones Automáticas
+Cuando el contenedor de la aplicación arranca:
+
+1. ✅ **Espera** a que PostgreSQL esté disponible
+2. ✅ **Ejecuta automáticamente** `prisma migrate deploy`
+3. ✅ **Crea todas las tablas** necesarias (User, MedicalExam, Document, etc.)
+4. ✅ **Inicia la aplicación**
+
+**Esto significa que NO necesitas:**
+- Ejecutar comandos SQL manualmente
+- Crear tablas a mano
+- Preocuparte por el schema de la base de datos
+
+Todo se configura automáticamente. 🎉
+
+### ¿Qué pasa si quieres usar tu propia Base de Datos?
+
+Si ya tienes PostgreSQL corriendo en otro servidor:
+1. Cambia `DATABASE_URL` en el `.env` para apuntar a tu servidor
+2. Las migraciones se ejecutarán automáticamente en tu BD
+3. Listo, no hay pasos adicionales
+
+Ver la sección **"Cambiar a una base de datos diferente"** más abajo para detalles.
+
+---
+
 ## 🚀 Instalación Rápida (5 pasos)
 
 ### 1. Instalar Docker en el VPS
@@ -111,8 +146,9 @@ ANTHROPIC_API_KEY=sk-ant-api...
 ### 4. Desplegar con Docker
 
 ```bash
-# Dar permisos de ejecución al script
+# Dar permisos de ejecución a los scripts
 chmod +x deploy.sh
+chmod +x docker-entrypoint.sh
 
 # Ejecutar deployment
 ./deploy.sh
@@ -126,6 +162,29 @@ docker-compose up -d --build
 
 # Ver logs
 docker-compose logs -f
+```
+
+**⚡ Importante sobre la Base de Datos:**
+
+Cuando el contenedor arranca por primera vez, el script `docker-entrypoint.sh` ejecuta automáticamente:
+
+1. **Verifica** que PostgreSQL esté disponible
+2. **Ejecuta** las migraciones de Prisma (`prisma migrate deploy`)
+3. **Crea** todas las tablas necesarias en tu base de datos de producción
+4. **Inicia** la aplicación Next.js
+
+Esto significa que **NO necesitas ejecutar comandos de Prisma manualmente**. Todo se configura automáticamente cuando despliegas.
+
+Para verificar que las migraciones se ejecutaron correctamente:
+
+```bash
+# Ver los logs del contenedor app durante el inicio
+docker-compose logs app | grep -i prisma
+
+# Deberías ver mensajes como:
+# ✅ PostgreSQL está listo!
+# 🔄 Ejecutando migraciones de Prisma...
+# ✅ Migraciones completadas!
 ```
 
 ### 5. Verificar que funciona
@@ -388,6 +447,70 @@ docker-compose logs postgres
 
 # Probar conexión manual
 docker exec -it health-tracker-db psql -U healthtracker -d health_tracker
+```
+
+### Migraciones de Prisma fallan
+
+```bash
+# Ver logs específicos de las migraciones
+docker-compose logs app | grep -A 10 "Ejecutando migraciones"
+
+# Errores comunes:
+
+# 1. "Can't reach database server"
+#    → La base de datos no está lista todavía
+#    → Solución: Esperar 30 segundos y reiniciar el contenedor
+docker-compose restart app
+
+# 2. "Migration failed"
+#    → Puede haber un problema con el schema
+#    → Solución: Verificar el schema de Prisma
+docker exec -it health-tracker-app npx prisma db push --force-reset
+#    ⚠️ CUIDADO: Esto borra todos los datos
+
+# 3. Ejecutar migraciones manualmente
+docker exec -it health-tracker-app npx prisma migrate deploy
+
+# 4. Ver estado de las migraciones
+docker exec -it health-tracker-app npx prisma migrate status
+```
+
+### Cambiar a una base de datos diferente
+
+Si quieres usar una base de datos PostgreSQL externa (no la del Docker Compose):
+
+1. **Actualizar .env:**
+
+```bash
+# En lugar de usar postgres:5432 (nombre del contenedor)
+# usa la IP/hostname de tu servidor PostgreSQL externo
+DATABASE_URL="postgresql://usuario:password@tu-servidor-db.com:5432/health_tracker?schema=public"
+```
+
+2. **Comentar el servicio postgres en docker-compose.yml:**
+
+```yaml
+# services:
+#   postgres:
+#     ... (comentar o eliminar esta sección)
+```
+
+3. **Ejecutar migraciones en la BD externa:**
+
+```bash
+# Las migraciones se ejecutarán automáticamente al iniciar el contenedor
+docker-compose up -d --build
+
+# O ejecutarlas manualmente:
+docker exec -it health-tracker-app npx prisma migrate deploy
+```
+
+4. **Verificar:**
+
+```bash
+# Conectarse a la BD externa para verificar las tablas
+docker exec -it health-tracker-app npx prisma studio
+# Esto abre Prisma Studio en http://localhost:5555
 ```
 
 ### Nginx no arranca

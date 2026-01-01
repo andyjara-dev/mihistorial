@@ -37,8 +37,14 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
+# Copiar script de entrypoint
+COPY docker-entrypoint.sh ./
+
 # Crear directorio para uploads
 RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
+
+# Dar permisos de ejecución al entrypoint
+RUN chmod +x docker-entrypoint.sh
 
 # Cambiar a usuario no-root
 USER nextjs
@@ -50,5 +56,5 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Script de inicio
-CMD ["npm", "start"]
+# Script de inicio que ejecuta migraciones y luego la app
+CMD ["./docker-entrypoint.sh"]
