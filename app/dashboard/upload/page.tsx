@@ -11,10 +11,12 @@ export default function UploadPage() {
   const [institution, setInstitution] = useState('')
   const [examDate, setExamDate] = useState('')
   const [loading, setLoading] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analyzed, setAnalyzed] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0]
 
@@ -34,6 +36,60 @@ export default function UploadPage() {
 
       setFile(selectedFile)
       setError('')
+
+      // Analizar el archivo automáticamente
+      await analyzeFile(selectedFile)
+    }
+  }
+
+  const analyzeFile = async (fileToAnalyze: File) => {
+    setAnalyzing(true)
+    setError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('file', fileToAnalyze)
+
+      const response = await fetch('/api/exams/analyze', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Error al analizar el PDF')
+        return
+      }
+
+      // Rellenar los campos con los datos extraídos
+      if (data.data.examDate) {
+        // Intentar formatear la fecha al formato YYYY-MM-DD
+        try {
+          const date = new Date(data.data.examDate)
+          if (!isNaN(date.getTime())) {
+            const formatted = date.toISOString().split('T')[0]
+            setExamDate(formatted)
+          }
+        } catch {
+          // Si falla, dejar vacío
+        }
+      }
+
+      if (data.data.examType) {
+        setExamType(data.data.examType)
+      }
+
+      if (data.data.institution) {
+        setInstitution(data.data.institution)
+      }
+
+      setAnalyzed(true)
+    } catch (err) {
+      setError('Error al analizar el PDF')
+      console.error(err)
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -80,6 +136,7 @@ export default function UploadPage() {
       setExamType('')
       setInstitution('')
       setExamDate('')
+      setAnalyzed(false)
 
       // Redirigir al dashboard después de 2 segundos
       setTimeout(() => {
@@ -100,7 +157,7 @@ export default function UploadPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="text-blue-600 hover:text-blue-700"
+              className="text-teal-600 hover:text-teal-700"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -125,13 +182,26 @@ export default function UploadPage() {
             </div>
           )}
 
+          {analyzing && (
+            <div className="bg-teal-100 border border-teal-400 text-teal-700 px-4 py-3 rounded mb-6 flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-600"></div>
+              <span>Analizando PDF y extrayendo datos automáticamente...</span>
+            </div>
+          )}
+
+          {analyzed && !analyzing && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+              PDF analizado exitosamente. Puedes revisar y editar los datos antes de guardar.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             {/* Subida de archivo */}
             <div className="mb-6">
               <label className="block text-gray-700 font-medium mb-2">
                 Archivo PDF del Examen
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-teal-500 transition">
                 <input
                   type="file"
                   accept="application/pdf"
@@ -172,7 +242,7 @@ export default function UploadPage() {
                 id="examType"
                 value={examType}
                 onChange={(e) => setExamType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
                 required
               >
                 <option value="">Selecciona un tipo</option>
@@ -195,7 +265,7 @@ export default function UploadPage() {
                 id="institution"
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
                 placeholder="Ej: Laboratorio Clínico XYZ"
                 required
               />
@@ -211,26 +281,30 @@ export default function UploadPage() {
                 id="examDate"
                 value={examDate}
                 onChange={(e) => setExamDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
                 required
               />
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-lg mb-6">
+            <div className="bg-teal-50 p-4 rounded-lg mb-6">
               <p className="text-sm text-gray-700">
-                <strong>Nota:</strong> El sistema procesará automáticamente el PDF con inteligencia artificial
-                para extraer los datos relevantes. Esto puede tomar unos minutos.
+                <strong>Cómo funciona:</strong>
               </p>
+              <ul className="text-sm text-gray-700 mt-2 list-disc list-inside space-y-1">
+                <li>Al seleccionar un PDF, el sistema extrae automáticamente la fecha, tipo de examen e institución</li>
+                <li>Puedes revisar y editar estos datos antes de guardar</li>
+                <li>Después de guardar, el PDF se procesará con IA para extraer los resultados médicos detallados</li>
+              </ul>
             </div>
 
             {/* Botones */}
             <div className="flex gap-4">
               <button
                 type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition font-medium"
+                disabled={loading || analyzing}
+                className="flex-1 bg-teal-500 text-white py-3 px-6 rounded-lg hover:bg-teal-600 disabled:bg-teal-300 transition font-medium"
               >
-                {loading ? 'Subiendo...' : 'Subir Examen'}
+                {loading ? 'Subiendo...' : analyzing ? 'Analizando...' : 'Subir Examen'}
               </button>
               <Link
                 href="/dashboard"

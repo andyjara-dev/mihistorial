@@ -1,4 +1,4 @@
-# Health Tracker
+# MiHistorial.Cloud
 
 Sistema de gestión de salud personal con encriptación de datos y procesamiento inteligente de exámenes médicos.
 
@@ -7,7 +7,9 @@ Sistema de gestión de salud personal con encriptación de datos y procesamiento
 - **Autenticación segura** con NextAuth.js
 - **Encriptación AES-256-GCM** para datos sensibles
 - **Almacenamiento seguro** de documentos PDF
-- **Procesamiento inteligente** de PDFs con IA (Claude API)
+- **Procesamiento inteligente** de PDFs con IA (Claude API / Google Gemini)
+- **Conversión automática de unidades** para 100+ mediciones médicas
+- **Análisis de tendencias** y gráficos de evolución temporal
 - **Gestión de exámenes médicos** y citas
 - **Interfaz moderna** con Next.js 14 y Tailwind CSS
 

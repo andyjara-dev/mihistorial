@@ -60,11 +60,11 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-teal-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-          Health Tracker
-        </h1>
+        <div className="flex justify-center mb-6">
+          <img src="/logo.png" alt="MiHistorial.Cloud" className="h-32 w-auto" />
+        </div>
         <h2 className="text-xl mb-6 text-center text-gray-600">
           Crear Cuenta
         </h2>
@@ -85,7 +85,7 @@ export default function SignUpPage() {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
             />
           </div>
 
@@ -98,7 +98,7 @@ export default function SignUpPage() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
               required
             />
           </div>
@@ -112,7 +112,7 @@ export default function SignUpPage() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
               required
               minLength={8}
             />
@@ -127,7 +127,7 @@ export default function SignUpPage() {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900"
               required
               minLength={8}
             />
@@ -136,7 +136,7 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition duration-200"
+            className="w-full bg-teal-500 text-white py-2 px-4 rounded-lg hover:bg-teal-600 disabled:bg-teal-300 transition duration-200"
           >
             {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
           </button>
@@ -144,12 +144,12 @@ export default function SignUpPage() {
 
         <p className="mt-4 text-center text-gray-600">
           ¿Ya tienes cuenta?{' '}
-          <Link href="/auth/signin" className="text-blue-600 hover:underline">
+          <Link href="/auth/signin" className="text-teal-600 hover:underline">
             Inicia sesión aquí
           </Link>
         </p>
 
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+        <div className="mt-6 p-4 bg-teal-50 rounded-lg">
           <p className="text-sm text-gray-700">
             <strong>Nota de seguridad:</strong> Tus datos médicos se encriptan con AES-256-GCM.
             Ni siquiera nosotros podemos acceder a tu información sin tu contraseña.
