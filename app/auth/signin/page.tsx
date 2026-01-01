@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ReCAPTCHA from 'react-google-recaptcha'
 
 export default function SignInPage() {
   const router = useRouter()
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -18,14 +20,25 @@ export default function SignInPage() {
     setLoading(true)
 
     try {
+      // Ejecutar reCAPTCHA
+      const recaptchaToken = await recaptchaRef.current?.executeAsync()
+      recaptchaRef.current?.reset()
+
+      if (!recaptchaToken) {
+        setError('Por favor completa la verificación de reCAPTCHA')
+        setLoading(false)
+        return
+      }
+
       const result = await signIn('credentials', {
         email,
         password,
+        recaptchaToken,
         redirect: false,
       })
 
       if (result?.error) {
-        setError('Email o contraseña incorrectos')
+        setError(result.error)
       } else {
         router.push('/dashboard')
         router.refresh()
@@ -81,6 +94,12 @@ export default function SignInPage() {
               required
             />
           </div>
+
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''}
+            size="invisible"
+          />
 
           <button
             type="submit"

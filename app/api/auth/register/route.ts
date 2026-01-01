@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, generateUserEncryptionKey } from '@/lib/encryption'
+import { verifyRecaptcha } from '@/lib/recaptcha'
+import { createVerificationToken, sendVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json()
+    const { email, password, name, recaptchaToken } = await request.json()
 
     // Validación básica
     if (!email || !password) {
@@ -27,6 +29,22 @@ export async function POST(request: NextRequest) {
     if (password.length < 8) {
       return NextResponse.json(
         { error: 'La contraseña debe tener al menos 8 caracteres' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar reCAPTCHA
+    if (!recaptchaToken) {
+      return NextResponse.json(
+        { error: 'Por favor completa la verificación de reCAPTCHA' },
+        { status: 400 }
+      )
+    }
+
+    const recaptchaValid = await verifyRecaptcha(recaptchaToken)
+    if (!recaptchaValid) {
+      return NextResponse.json(
+        { error: 'Verificación de reCAPTCHA fallida. Por favor intenta de nuevo' },
         { status: 400 }
       )
     }
@@ -56,6 +74,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name: name || null,
         encryptionKey,
+        emailVerified: null, // Email no verificado inicialmente
       },
       select: {
         id: true,
@@ -65,10 +84,25 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Crear token y enviar email de verificación
+    try {
+      const verificationToken = await createVerificationToken(email)
+      const emailResult = await sendVerificationEmail(email, verificationToken)
+
+      if (!emailResult.success) {
+        console.error('Error al enviar email de verificación:', emailResult.error)
+        // No falla el registro si el email falla, pero lo registramos
+      }
+    } catch (emailError) {
+      console.error('Error al procesar verificación de email:', emailError)
+      // Continuar aunque falle el envío del email
+    }
+
     return NextResponse.json(
       {
-        message: 'Usuario creado exitosamente',
+        message: 'Usuario creado exitosamente. Por favor verifica tu email para activar tu cuenta.',
         user,
+        emailSent: true,
       },
       { status: 201 }
     )

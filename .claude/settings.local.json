@@ -4,7 +4,9 @@
       "Bash(npm install:*)",
       "Bash(ls:*)",
       "Bash(npm run build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma generate:*)"
     ]
   }
 }
