@@ -3,7 +3,8 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptData } from '@/lib/encryption'
 import { saveEncryptedFile } from '@/lib/file-storage'
-import { extractTextFromPDF, processExamWithAI } from '@/lib/pdf-processor'
+// Procesador unificado que selecciona automáticamente según AI_PROVIDER en .env
+import { extractTextFromPDF, processExamWithAI, getProviderInfo } from '@/lib/ai-processor'
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,52 +76,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Extraer texto del PDF para procesamiento
+    // Preparar datos básicos iniciales
     let examData: Record<string, unknown> = {
       examType,
       institution,
-    }
-
-    let aiProcessed = false
-
-    try {
-      const pdfText = await extractTextFromPDF(fileBuffer)
-
-      // Procesar con IA en segundo plano (sin bloquear la respuesta)
-      processExamWithAI(pdfText, examType, institution)
-        .then((extractedData) => {
-          examData = extractedData
-          aiProcessed = true
-
-          // Encriptar los datos extraídos
-          const { encrypted, iv } = encryptData(
-            JSON.stringify(examData),
-            user.encryptionKey
-          )
-
-          // Actualizar el examen en la BD
-          return prisma.medicalExam.update({
-            where: { id: medicalExam.id },
-            data: {
-              encryptedData: encrypted,
-              encryptionIv: iv,
-              aiProcessed: true,
-              processingStatus: 'completed',
-            },
-          })
-        })
-        .catch((error) => {
-          console.error('Error al procesar con IA:', error)
-          // Actualizar estado a fallido
-          return prisma.medicalExam.update({
-            where: { id: medicalExam.id },
-            data: {
-              processingStatus: 'failed',
-            },
-          })
-        })
-    } catch (error) {
-      console.error('Error al extraer texto del PDF:', error)
     }
 
     // Encriptar datos básicos iniciales
@@ -140,9 +99,46 @@ export async function POST(request: NextRequest) {
         encryptedData: encrypted,
         encryptionIv: iv,
         processingStatus: 'processing',
-        aiProcessed,
+        aiProcessed: false,
       },
     })
+
+    // Procesar con IA en segundo plano (sin bloquear la respuesta)
+    try {
+      const pdfText = await extractTextFromPDF(fileBuffer)
+
+      processExamWithAI(pdfText, examType, institution)
+        .then((extractedData) => {
+          // Encriptar los datos extraídos
+          const { encrypted: encryptedData, iv: ivData } = encryptData(
+            JSON.stringify(extractedData),
+            user.encryptionKey
+          )
+
+          // Actualizar el examen en la BD
+          return prisma.medicalExam.update({
+            where: { id: medicalExam.id },
+            data: {
+              encryptedData: encryptedData,
+              encryptionIv: ivData,
+              aiProcessed: true,
+              processingStatus: 'completed',
+            },
+          })
+        })
+        .catch((error) => {
+          console.error('Error al procesar con IA:', error)
+          // Actualizar estado a fallido
+          return prisma.medicalExam.update({
+            where: { id: medicalExam.id },
+            data: {
+              processingStatus: 'failed',
+            },
+          })
+        })
+    } catch (error) {
+      console.error('Error al extraer texto del PDF:', error)
+    }
 
     return NextResponse.json(
       {

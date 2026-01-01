@@ -197,15 +197,28 @@ Accede a `/auth/signup` y crea una cuenta con tu email y contraseña.
 
 Los exámenes aparecerán en tu dashboard con información extraída automáticamente.
 
-## API de Claude (Opcional)
+## ⚙️ Configuración de IA para PDFs
 
-Para habilitar el procesamiento inteligente de PDFs:
+El sistema soporta 2 proveedores de IA que puedes elegir:
 
-1. Crea una cuenta en [Anthropic Console](https://console.anthropic.com/)
-2. Genera una API key
-3. Agrégala a `.env` como `ANTHROPIC_API_KEY`
+| Proveedor | Costo | Configuración |
+|-----------|-------|---------------|
+| **Google Gemini** ⭐ | Gratis | [Ver guía →](CONFIGURAR-IA.md) |
+| **Claude** | Pagado | [Ver guía →](CONFIGURAR-IA.md) |
 
-Si no configuras la API key, los exámenes se guardarán igualmente pero sin procesamiento de IA.
+### Configuración Rápida (Gemini - Gratis)
+
+1. Obtén API key gratis en: https://makersuite.google.com/app/apikey
+2. Edita `.env`:
+   ```bash
+   AI_PROVIDER="gemini"
+   GEMINI_API_KEY="tu-api-key-aqui"
+   ```
+3. Reinicia el servidor: `npm run dev`
+
+📖 **[Guía completa de configuración →](CONFIGURAR-IA.md)**
+
+Si no configuras IA, los exámenes se guardarán pero sin procesamiento automático.
 
 ## Comandos Útiles
 

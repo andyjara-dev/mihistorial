@@ -1,52 +1,40 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 /**
- * Extrae texto de un PDF usando Claude
- * Claude puede procesar PDFs directamente
+ * Extrae texto de un PDF usando Gemini Vision
+ * Gemini puede procesar PDFs directamente sin necesidad de librerías adicionales
  */
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY
+    const apiKey = process.env.GEMINI_API_KEY
 
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY no configurada')
+      throw new Error('GEMINI_API_KEY no configurada')
     }
 
-    const anthropic = new Anthropic({ apiKey })
+    const genAI = new GoogleGenerativeAI(apiKey)
+    // Usar Gemini 2.5 Flash - modelo "todoterreno" equilibrado en velocidad y capacidad
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
     // Convertir PDF a base64
     const base64Data = pdfBuffer.toString('base64')
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: base64Data,
-              },
-            },
-            {
-              type: 'text',
-              text: 'Extrae TODO el texto de este documento PDF. Devuelve únicamente el texto extraído, sin comentarios adicionales.',
-            },
-          ],
+    const prompt = 'Extrae TODO el texto de este documento PDF. Devuelve únicamente el texto extraído, sin comentarios adicionales.'
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: 'application/pdf',
+          data: base64Data,
         },
-      ],
-    })
+      },
+    ])
 
-    const content = message.content[0]
-    if (content.type !== 'text') {
-      throw new Error('Respuesta inesperada de la API')
-    }
+    const response = await result.response
+    const text = response.text()
 
-    return content.text.trim()
+    return text.trim()
   } catch (error) {
     console.error('Error al extraer texto del PDF:', error)
     throw new Error('No se pudo extraer el texto del PDF')
@@ -54,27 +42,28 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
 }
 
 /**
- * Procesa un examen médico con IA para extraer información estructurada
+ * Procesa un examen médico con Google Gemini (GRATIS)
  */
 export async function processExamWithAI(
   pdfText: string,
   examType: string,
   institution: string
 ): Promise<Record<string, unknown>> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
 
   if (!apiKey) {
-    console.warn('ANTHROPIC_API_KEY no configurada, retornando datos básicos')
+    console.warn('GEMINI_API_KEY no configurada, retornando datos básicos')
     return {
       examType,
       institution,
-      rawText: pdfText.substring(0, 500), // Solo primeros 500 caracteres
+      rawText: pdfText.substring(0, 500),
       processed: false,
     }
   }
 
   try {
-    const anthropic = new Anthropic({ apiKey })
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
     const prompt = `Eres un asistente médico especializado en extraer información de exámenes médicos.
 
@@ -118,25 +107,12 @@ Formato de respuesta:
   "summary": "resumen breve del examen"
 }`
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    })
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    const text = response.text()
 
-    // Extraer el contenido de la respuesta
-    const content = message.content[0]
-    if (content.type !== 'text') {
-      throw new Error('Respuesta inesperada de la API')
-    }
-
-    // Parsear el JSON de la respuesta
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/)
+    // Extraer el JSON de la respuesta
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       throw new Error('No se pudo extraer JSON de la respuesta')
     }
