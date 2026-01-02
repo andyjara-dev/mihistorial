@@ -6,7 +6,8 @@
       "Bash(npm run build:*)",
       "Bash(cat:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

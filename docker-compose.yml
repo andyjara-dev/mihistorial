@@ -5,12 +5,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Variable pública de reCAPTCHA necesaria en build time
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
     container_name: health-tracker-app
-    restart:  unless-stopped
+    restart: unless-stopped
     ports:
       - "3003:3000"
     env_file:
-      - .env
+      - .env.production
     environment:
       NODE_ENV: production
     volumes:

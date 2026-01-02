@@ -5,6 +5,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build arguments para variables NEXT_PUBLIC_*
+ARG NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+ENV NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+
 # Copiar archivos de dependencias
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -18,7 +22,7 @@ COPY . .
 # Generar Prisma Client
 RUN npx prisma generate
 
-# Build de Next.js
+# Build de Next.js (con NEXT_PUBLIC_* disponibles)
 RUN npm run build
 
 # Etapa 2: Producción
