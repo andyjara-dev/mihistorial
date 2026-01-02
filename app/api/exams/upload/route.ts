@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptData } from '@/lib/encryption'
 import { saveEncryptedFile } from '@/lib/file-storage'
+import crypto from 'crypto'
 // Procesador unificado que selecciona automáticamente según AI_PROVIDER en .env
 import { extractTextFromPDF, processExamWithAI, getProviderInfo } from '@/lib/ai-processor'
 
@@ -55,26 +56,50 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     const fileBuffer = Buffer.from(arrayBuffer)
 
-    // Guardar archivo encriptado
-    const { filePath, encryptionIv, fileHash } = await saveEncryptedFile(
-      fileBuffer,
-      user.id,
-      user.encryptionKey,
-      file.name
-    )
+    // Calcular hash del archivo para detectar duplicados
+    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex')
 
-    // Crear documento en la BD
-    const document = await prisma.document.create({
-      data: {
+    // Buscar si ya existe un documento con el mismo hash para este usuario
+    const existingDocument = await prisma.document.findFirst({
+      where: {
         userId: user.id,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        filePath,
-        encryptionIv,
         fileHash,
       },
+      include: {
+        medicalExams: true,
+      },
     })
+
+    let document
+    let isUpdate = false
+
+    if (existingDocument) {
+      // Si existe, reutilizar el documento
+      document = existingDocument
+      isUpdate = true
+      console.log(`📄 PDF duplicado detectado (hash: ${fileHash.substring(0, 10)}...). Actualizando examen existente.`)
+    } else {
+      // Si no existe, guardar nuevo archivo encriptado
+      const { filePath, encryptionIv, fileHash: calculatedHash } = await saveEncryptedFile(
+        fileBuffer,
+        user.id,
+        user.encryptionKey,
+        file.name
+      )
+
+      // Crear nuevo documento en la BD
+      document = await prisma.document.create({
+        data: {
+          userId: user.id,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          filePath,
+          encryptionIv,
+          fileHash: calculatedHash,
+        },
+      })
+    }
 
     // Preparar datos básicos iniciales
     let examData: Record<string, unknown> = {
@@ -88,20 +113,40 @@ export async function POST(request: NextRequest) {
       user.encryptionKey
     )
 
-    // Crear examen médico en la BD
-    const medicalExam = await prisma.medicalExam.create({
-      data: {
-        userId: user.id,
-        examType,
-        institution,
-        examDate: new Date(examDate),
-        documentId: document.id,
-        encryptedData: encrypted,
-        encryptionIv: iv,
-        processingStatus: 'processing',
-        aiProcessed: false,
-      },
-    })
+    let medicalExam
+
+    if (isUpdate && existingDocument && existingDocument.medicalExams.length > 0) {
+      // Actualizar el examen existente
+      medicalExam = await prisma.medicalExam.update({
+        where: { id: existingDocument.medicalExams[0].id },
+        data: {
+          examType,
+          institution,
+          examDate: new Date(examDate),
+          encryptedData: encrypted,
+          encryptionIv: iv,
+          processingStatus: 'processing',
+          aiProcessed: false,
+        },
+      })
+      console.log(`♻️ Examen actualizado: ${medicalExam.id}`)
+    } else {
+      // Crear nuevo examen médico en la BD
+      medicalExam = await prisma.medicalExam.create({
+        data: {
+          userId: user.id,
+          examType,
+          institution,
+          examDate: new Date(examDate),
+          documentId: document.id,
+          encryptedData: encrypted,
+          encryptionIv: iv,
+          processingStatus: 'processing',
+          aiProcessed: false,
+        },
+      })
+      console.log(`✨ Nuevo examen creado: ${medicalExam.id}`)
+    }
 
     // Procesar con IA en segundo plano (sin bloquear la respuesta)
     try {
@@ -142,7 +187,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: 'Examen subido exitosamente',
+        message: isUpdate
+          ? 'Examen actualizado exitosamente. El PDF ya existía, se reprocesará con IA.'
+          : 'Examen subido exitosamente',
+        isUpdate,
         exam: {
           id: medicalExam.id,
           examType: medicalExam.examType,
@@ -150,7 +198,7 @@ export async function POST(request: NextRequest) {
           examDate: medicalExam.examDate,
         },
       },
-      { status: 201 }
+      { status: isUpdate ? 200 : 201 }
     )
   } catch (error) {
     console.error('Error al subir examen:', error)

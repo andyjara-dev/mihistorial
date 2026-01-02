@@ -131,6 +131,12 @@ export default function UploadPage() {
 
       setSuccess(true)
 
+      // Mostrar mensaje específico si fue una actualización
+      if (data.isUpdate) {
+        setError('')
+        alert('📄 PDF duplicado detectado.\n\nEste PDF ya fue subido anteriormente. El examen existente se actualizó con los nuevos datos y se reprocesará con IA.')
+      }
+
       // Resetear formulario
       setFile(null)
       setExamType('')
