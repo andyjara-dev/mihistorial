@@ -2,7 +2,19 @@ import { Resend } from 'resend'
 import crypto from 'crypto'
 import { prisma } from './prisma'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization: solo crear instancia cuando se necesite
+let resendInstance: Resend | null = null
+
+function getResendClient(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY no está configurada')
+    }
+    resendInstance = new Resend(apiKey)
+  }
+  return resendInstance
+}
 
 /**
  * Genera un token único para verificación de email
@@ -75,6 +87,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
 
   try {
+    const resend = getResendClient()
     await resend.emails.send({
       from: process.env.EMAIL_FROM || 'MiHistorial.Cloud <noreply@mihistorial.cloud>',
       to: email,
