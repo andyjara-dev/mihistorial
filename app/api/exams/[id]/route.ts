@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decryptData } from '@/lib/encryption'
+import fs from 'fs/promises'
+import path from 'path'
 
 export async function GET(
   request: NextRequest,
@@ -75,6 +77,82 @@ export async function GET(
     })
   } catch (error) {
     console.error('Error al obtener examen:', error)
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const { id: examId } = await params
+
+    // Obtener el examen con sus relaciones
+    const exam = await prisma.medicalExam.findUnique({
+      where: { id: examId },
+      include: {
+        document: {
+          include: {
+            medicalExams: true,
+          },
+        },
+      },
+    })
+
+    if (!exam) {
+      return NextResponse.json({ error: 'Examen no encontrado' }, { status: 404 })
+    }
+
+    // Verificar que el examen pertenece al usuario
+    if (exam.userId !== session.user.id) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+    }
+
+    // Eliminar el examen
+    await prisma.medicalExam.delete({
+      where: { id: examId },
+    })
+
+    console.log(`🗑️ Examen eliminado: ${examId}`)
+
+    // Si el documento asociado no tiene otros exámenes, eliminarlo también
+    if (exam.document && exam.document.medicalExams.length === 1) {
+      const documentId = exam.document.id
+      const filePath = exam.document.filePath
+
+      // Eliminar el archivo físico
+      try {
+        const fullPath = path.join(process.cwd(), filePath)
+        await fs.unlink(fullPath)
+        console.log(`🗑️ Archivo eliminado: ${filePath}`)
+      } catch (error) {
+        console.error('Error al eliminar archivo:', error)
+        // Continuar aunque falle la eliminación del archivo
+      }
+
+      // Eliminar el documento de la base de datos
+      await prisma.document.delete({
+        where: { id: documentId },
+      })
+
+      console.log(`🗑️ Documento eliminado: ${documentId}`)
+    }
+
+    return NextResponse.json({
+      message: 'Examen eliminado exitosamente',
+      deletedExamId: examId,
+    })
+  } catch (error) {
+    console.error('Error al eliminar examen:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

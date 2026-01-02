@@ -103,6 +103,9 @@ Después del despliegue, verifica:
 - [ ] Dashboard se actualiza automáticamente cada 5 segundos cuando hay exámenes procesándose
 - [ ] Al subir el mismo PDF dos veces aparece mensaje "PDF duplicado detectado"
 - [ ] Los datos se mergean inteligentemente (verifica en logs)
+- [ ] Puedes eliminar exámenes desde la página de detalle
+- [ ] El modal de confirmación aparece antes de eliminar
+- [ ] Después de eliminar, te redirige al dashboard
 
 ## 🐛 Solución de Problemas
 
