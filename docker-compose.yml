@@ -20,7 +20,8 @@ services:
       - uploads_data:/app/uploads
     networks:
       - health-tracker-network
-    command: sh -c "npx prisma migrate deploy --config=./prisma.config.mts && npm start"
+    # Usar el docker-entrypoint.sh que ya maneja migraciones
+    # command: se omite para usar el CMD del Dockerfile
 
 volumes:
   uploads_data:
