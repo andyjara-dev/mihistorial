@@ -14,6 +14,7 @@ services:
       - .env.production
     environment:
       NODE_ENV: production
+      AUTH_TRUST_HOST: "true"
     volumes:
       - uploads_data:/app/uploads
     networks:
