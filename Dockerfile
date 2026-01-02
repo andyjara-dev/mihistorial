@@ -16,11 +16,8 @@ COPY prisma ./prisma/
 # Instalar dependencias
 RUN npm ci
 
-# Copiar el resto del código (incluye prisma.config.ts)
+# Copiar el resto del código (incluye prisma.config.mts)
 COPY . .
-
-# Debug: listar archivos para verificar
-RUN ls -la && echo "=== Verificando prisma.config.ts ===" && ls -la prisma.config.* || echo "❌ prisma.config.ts NO ENCONTRADO"
 
 # Generar Prisma Client
 RUN npx prisma generate
@@ -43,7 +40,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/prisma.config.mts ./prisma.config.mts
 
 # Copiar script de entrypoint
 COPY docker-entrypoint.sh ./

@@ -30,4 +30,4 @@ Thumbs.db
 
 # Mantener prisma para generar el cliente
 !prisma
-!prisma.config.ts
+!prisma.config.mts
