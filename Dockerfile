@@ -19,6 +19,9 @@ RUN npm ci
 # Copiar el resto del código (incluye prisma.config.ts)
 COPY . .
 
+# Debug: listar archivos para verificar
+RUN ls -la && echo "=== Verificando prisma.config.ts ===" && ls -la prisma.config.* || echo "❌ prisma.config.ts NO ENCONTRADO"
+
 # Generar Prisma Client
 RUN npx prisma generate
 
