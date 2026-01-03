@@ -243,38 +243,81 @@ async function generateAIHealthAdvice(
       firstValue: t.values[0]?.value,
     }))
 
-    const prompt = `Eres un asistente médico especializado en análisis de salud preventiva.
+    const prompt = `Eres un médico especialista en medicina preventiva y nutrición. Analiza los resultados de laboratorio y genera recomendaciones ESPECÍFICAS y PERSONALIZADAS.
 
-Analiza los siguientes datos de exámenes médicos del paciente de los últimos meses:
+**DATOS DEL PACIENTE:**
 
-**EXÁMENES REALIZADOS:**
+EXÁMENES REALIZADOS:
 ${JSON.stringify(examsData, null, 2)}
 
-**TENDENCIAS DETECTADAS:**
+TENDENCIAS DETECTADAS:
 ${JSON.stringify(trendsData, null, 2)}
 
-**VALORES FUERA DE RANGO:**
+VALORES FUERA DE RANGO:
 ${JSON.stringify(abnormalValues, null, 2)}
 
-**INSTRUCCIONES:**
-Genera un reporte de salud personalizado con:
+**INSTRUCCIONES CRÍTICAS - LEE CUIDADOSAMENTE:**
 
-1. **Resumen general** (2-3 oraciones sobre el estado de salud)
-2. **Estado general** (clasifica como: "good", "attention", o "concerning")
-3. **Hallazgos clave** (3-5 puntos más importantes que requieren atención)
-4. **Recomendaciones personalizadas:**
-   - **Alimentación:** Consejos dietéticos específicos basados en los resultados (qué comer, qué evitar)
-   - **Ejercicio:** Tipo de actividad física recomendada, frecuencia e intensidad
-   - **Seguimiento médico:** Qué controlar, cuándo consultar, exámenes a repetir
-5. **Aspectos positivos:** Qué está bien en la salud del paciente
-6. **Áreas de mejora:** Qué necesita mejorar
+1. **Resumen general**: 2-3 oraciones mencionando los valores ESPECÍFICOS que están fuera de rango con sus números exactos.
 
-**IMPORTANTE:**
-- Sé específico: menciona los valores exactos que están fuera de rango
-- Prioriza por importancia médica
-- Usa lenguaje claro y comprensible para el paciente
-- Si un valor está alto (ej: colesterol LDL), recomienda alimentos específicos
-- Incluye disclaimer: estos son consejos informativos, no reemplazan consulta médica
+2. **Estado general**: Clasifica como "good", "attention", o "concerning" basado en la gravedad de los hallazgos.
+
+3. **Hallazgos clave**: Para CADA valor fuera de rango, menciona:
+   - El nombre del indicador
+   - El valor actual vs. rango normal
+   - El significado clínico específico
+   Ejemplo: "HDL Colesterol bajo (35 mg/dL, rango normal: >40 mg/dL) - aumenta riesgo cardiovascular"
+
+4. **RECOMENDACIONES DE ALIMENTACIÓN** - ¡MUY IMPORTANTE!:
+   - **NO uses consejos genéricos** como "come sano" o "dieta balanceada"
+   - **SÍ menciona ALIMENTOS ESPECÍFICOS** con cantidades y frecuencias
+   - Para cada valor anormal, recomienda alimentos concretos que lo mejoren:
+
+   Ejemplos de BUENAS recomendaciones:
+   - "HDL bajo → Consume aguacate (1/2 diario), nueces (30g/día), aceite de oliva extra virgen (2 cucharadas/día), pescado graso como salmón o sardinas (3 veces/semana)"
+   - "LDL alto → Evita carnes rojas y lácteos enteros. Consume avena (1 taza/día), almendras (20 unidades/día), manzanas con cáscara (1-2/día), legumbres (4 veces/semana)"
+   - "Triglicéridos altos → Elimina azúcares añadidos, refrescos y harinas refinadas. Consume pescado graso, chia (1 cucharada/día), reduce carbohidratos simples"
+   - "Glucosa alta → Evita pan blanco, arroz blanco, dulces. Consume vegetales verdes abundantes, proteínas magras, quinoa en lugar de arroz, canela (1 cucharadita/día)"
+   - "Hierro bajo → Consume hígado de res (100g 2 veces/semana), lentejas (1 taza 3 veces/semana), espinacas con vitamina C (jugo de limón), evita té/café con comidas"
+   - "Ácido úrico alto → Evita vísceras, mariscos, cerveza. Limita carnes rojas a 1 vez/semana. Consume cerezas (1 taza/día), aumenta agua a 2-3 litros/día"
+
+   Ejemplos de MALAS recomendaciones (NO hagas esto):
+   - ❌ "Mantén una dieta equilibrada"
+   - ❌ "Come más verduras"
+   - ❌ "Evita grasas saturadas"
+   - ❌ "Reduce el consumo de azúcar"
+
+5. **RECOMENDACIONES DE EJERCICIO** - ¡SÉ ESPECÍFICO!:
+   - NO digas solo "haz ejercicio regular"
+   - SÍ especifica: tipo, duración, frecuencia, intensidad
+
+   Ejemplos de BUENAS recomendaciones:
+   - "Colesterol alto → Camina rápido 45 minutos diarios o trota 30 minutos 5 veces/semana. Frecuencia cardíaca objetivo: 60-70% de tu máximo"
+   - "Triglicéridos altos → Ejercicio aeróbico moderado (ciclismo, natación) 150 minutos/semana distribuidos en 5 sesiones de 30 minutos"
+   - "Glucosa alta → Camina 10-15 minutos después de cada comida principal. Ejercicio de resistencia (pesas) 2-3 veces/semana"
+   - "Presión alta → Ejercicio cardiovascular de intensidad moderada 40 minutos, 5 días/semana. Evita levantamiento de pesas muy pesado"
+
+6. **SEGUIMIENTO MÉDICO** - ¡SÉ PRECISO!:
+   - Especifica QUÉ exámenes repetir y CUÁNDO
+   - Menciona señales de alarma específicas
+
+   Ejemplos:
+   - "Repetir perfil lipídico en 3 meses para evaluar respuesta a cambios de estilo de vida"
+   - "Si presentas dolor torácico, dificultad respiratoria o palpitaciones, consulta inmediatamente"
+   - "Considera consultar cardiólogo si LDL no baja después de 3 meses de cambios"
+   - "Medir presión arterial en casa 2 veces/día (mañana y noche) durante 1 semana"
+
+7. **Aspectos positivos**: Menciona valores NORMALES específicos del paciente.
+
+8. **Áreas de mejora**: Lista los indicadores específicos que necesitan atención.
+
+**REGLAS ABSOLUTAS:**
+✅ SIEMPRE menciona números específicos (valores actuales vs. normales)
+✅ SIEMPRE nombra alimentos concretos con cantidades
+✅ SIEMPRE especifica frecuencias (veces/semana, diario, etc.)
+✅ SIEMPRE relaciona cada recomendación con el indicador específico
+❌ NUNCA uses consejos genéricos sin alimentos específicos
+❌ NUNCA des recomendaciones vagas como "come sano"
 
 Responde SOLO con un objeto JSON válido con esta estructura exacta:
 {
