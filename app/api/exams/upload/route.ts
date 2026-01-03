@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
           )
 
           // Actualizar el examen en la BD
-          return prisma.medicalExam.update({
+          await prisma.medicalExam.update({
             where: { id: medicalExam.id },
             data: {
               encryptedData: encryptedData,
@@ -256,6 +256,27 @@ export async function POST(request: NextRequest) {
               processingStatus: 'completed',
             },
           })
+
+          // NUEVO: Generar reporte de salud automáticamente
+          try {
+            const { generateHealthReport } = await import('@/lib/health-report-generator')
+            console.log(`🏥 Disparando generación de reporte de salud para usuario ${user.id}...`)
+
+            // Ejecutar en background (no bloquear)
+            generateHealthReport(user.id, user.encryptionKey, medicalExam.id)
+              .then(reportId => {
+                if (reportId) {
+                  console.log(`✅ Reporte de salud generado: ${reportId}`)
+                }
+              })
+              .catch(err => {
+                console.error('❌ Error al generar reporte de salud:', err)
+                // No fallar el procesamiento del examen si falla el reporte
+              })
+          } catch (error) {
+            console.error('Error al disparar generación de reporte:', error)
+            // No fallar el procesamiento del examen si falla el reporte
+          }
         })
         .catch((error) => {
           console.error('Error al procesar con IA:', error)

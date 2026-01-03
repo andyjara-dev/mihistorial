@@ -27,6 +27,16 @@ interface Appointment {
   status: string
 }
 
+interface HealthReport {
+  id: string
+  periodMonths: number
+  generatedAt: Date
+  summary?: string
+  overallStatus?: 'good' | 'attention' | 'concerning'
+  keyFindings?: string[]
+  examCount?: number
+}
+
 interface Props {
   user: User
   medicalExams: MedicalExam[]
@@ -35,7 +45,29 @@ interface Props {
 
 export default function DashboardClient({ user, medicalExams, appointments }: Props) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'exams' | 'appointments'>('exams')
+  const [activeTab, setActiveTab] = useState<'exams' | 'appointments' | 'health-reports'>('exams')
+  const [healthReports, setHealthReports] = useState<HealthReport[]>([])
+  const [loadingReports, setLoadingReports] = useState(false)
+
+  // Cargar reportes de salud
+  useEffect(() => {
+    const fetchHealthReports = async () => {
+      setLoadingReports(true)
+      try {
+        const response = await fetch('/api/health-reports')
+        if (response.ok) {
+          const data = await response.json()
+          setHealthReports(data.reports || [])
+        }
+      } catch (error) {
+        console.error('Error al cargar reportes de salud:', error)
+      } finally {
+        setLoadingReports(false)
+      }
+    }
+
+    fetchHealthReports()
+  }, [])
 
   // Auto-refresh cuando hay exámenes en procesamiento
   useEffect(() => {
@@ -73,6 +105,16 @@ export default function DashboardClient({ user, medicalExams, appointments }: Pr
             </div>
             <div className="flex items-center gap-4">
               <span className="text-gray-700">{user.email}</span>
+              <button
+                onClick={() => router.push('/dashboard/settings')}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Configuración
+              </button>
               <button
                 onClick={handleSignOut}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
@@ -191,6 +233,16 @@ export default function DashboardClient({ user, medicalExams, appointments }: Pr
               >
                 Citas Médicas
               </button>
+              <button
+                onClick={() => setActiveTab('health-reports')}
+                className={`py-4 px-6 font-medium ${
+                  activeTab === 'health-reports'
+                    ? 'border-b-2 border-teal-500 text-teal-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Reportes de Salud
+              </button>
             </nav>
           </div>
 
@@ -256,7 +308,7 @@ export default function DashboardClient({ user, medicalExams, appointments }: Pr
                   </p>
                 </div>
               )
-            ) : (
+            ) : activeTab === 'appointments' ? (
               appointments.length > 0 ? (
                 <div className="space-y-4">
                   {appointments.map((appointment) => (
@@ -301,6 +353,87 @@ export default function DashboardClient({ user, medicalExams, appointments }: Pr
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No hay citas</h3>
                   <p className="mt-1 text-sm text-gray-500">
                     No tienes citas médicas programadas
+                  </p>
+                </div>
+              )
+            ) : (
+              /* Reportes de Salud */
+              loadingReports ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Cargando reportes...</p>
+                </div>
+              ) : healthReports.length > 0 ? (
+                <div className="space-y-4">
+                  {healthReports.map((report) => {
+                    const statusEmoji = report.overallStatus === 'good' ? '✅' : report.overallStatus === 'attention' ? '⚠️' : '🚨'
+                    const statusColor = report.overallStatus === 'good' ? 'green' : report.overallStatus === 'attention' ? 'yellow' : 'red'
+                    const statusText = report.overallStatus === 'good' ? 'Bueno' : report.overallStatus === 'attention' ? 'Requiere Atención' : 'Preocupante'
+
+                    return (
+                      <div
+                        key={report.id}
+                        onClick={() => router.push(`/dashboard/health-reports/${report.id}`)}
+                        className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition cursor-pointer hover:border-teal-400"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-2xl">{statusEmoji}</span>
+                              <h3 className="font-semibold text-lg text-gray-900">Reporte de Salud</h3>
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              {new Date(report.generatedAt).toLocaleDateString('es-ES', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })} - Análisis de {report.periodMonths} {report.periodMonths === 1 ? 'mes' : 'meses'}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-3 py-1 rounded-full bg-${statusColor}-100 text-${statusColor}-800 whitespace-nowrap`}>
+                            {statusText}
+                          </span>
+                        </div>
+
+                        {report.summary && (
+                          <p className="text-gray-700 text-sm mb-3 line-clamp-2">{report.summary}</p>
+                        )}
+
+                        {report.keyFindings && report.keyFindings.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Hallazgos principales:</p>
+                            <ul className="space-y-1">
+                              {report.keyFindings.map((finding, index) => (
+                                <li key={index} className="text-sm text-gray-600 flex items-start">
+                                  <span className="mr-2">•</span>
+                                  <span className="line-clamp-1">{finding}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                          <span>{report.examCount} exámenes analizados</span>
+                          <span className="flex items-center gap-1">
+                            Ver detalles
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No hay reportes de salud</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Los reportes se generan automáticamente cuando subes y procesas exámenes médicos
                   </p>
                 </div>
               )

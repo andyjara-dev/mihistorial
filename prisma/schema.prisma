@@ -25,12 +25,16 @@ model User {
   // Clave de encriptación del usuario (encriptada con clave maestra)
   encryptionKey String
 
+  // Configuración de reportes de salud
+  healthReportPeriodMonths Int @default(6) // 1, 3, 6, 12, 24
+
   // Relaciones
   accounts      Account[]
   sessions      Session[]
   medicalExams  MedicalExam[]
   appointments  Appointment[]
   documents     Document[]
+  healthReports HealthReport[]
 }
 
 // Para NextAuth
@@ -160,4 +164,31 @@ model Document {
   medicalExams  MedicalExam[]
 
   @@index([userId])
+}
+
+// Reportes de Salud con Consejos de IA
+model HealthReport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Período analizado
+  periodMonths Int // Cuántos meses se analizaron
+  periodStart  DateTime
+  periodEnd    DateTime
+
+  // Datos del reporte encriptados (JSON con consejos, análisis, tendencias)
+  encryptedData String @db.Text
+  encryptionIv  String
+
+  // Metadata
+  triggeredBy  String? // ID del examen que disparó este reporte (si fue automático)
+  generatedAt  DateTime @default(now())
+  emailSent    Boolean @default(false)
+  emailSentAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([generatedAt])
 }
