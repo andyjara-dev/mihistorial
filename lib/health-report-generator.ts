@@ -93,20 +93,26 @@ function decryptExamData(exam: any, userEncryptionKey: string): ExamData {
     )
     const data = JSON.parse(decrypted)
 
+    // Asegurar que examDate sea un objeto Date
+    const examDate = exam.examDate instanceof Date ? exam.examDate : new Date(exam.examDate)
+
     return {
       id: exam.id,
       examType: exam.examType,
       institution: exam.institution,
-      examDate: exam.examDate,
+      examDate,
       ...data,
     }
   } catch (error) {
     console.error(`Error al desencriptar examen ${exam.id}:`, error)
+    // Asegurar que examDate sea un objeto Date en el fallback también
+    const examDate = exam.examDate instanceof Date ? exam.examDate : new Date(exam.examDate)
+
     return {
       id: exam.id,
       examType: exam.examType,
       institution: exam.institution,
-      examDate: exam.examDate,
+      examDate,
     }
   }
 }
