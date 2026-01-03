@@ -14,7 +14,10 @@ interface HealthReportData {
   data: {
     summary: string
     overallStatus: 'good' | 'attention' | 'concerning'
-    keyFindings: string[]
+    keyFindings: Array<{
+      text: string
+      examId?: string
+    }>
     recommendations: {
       diet: string[]
       exercise: string[]
@@ -171,13 +174,40 @@ export default function HealthReportClient({ reportId }: { reportId: string }) {
         {report.data.keyFindings && report.data.keyFindings.length > 0 && (
           <div className="bg-white rounded-lg shadow mb-6 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">🔍 Hallazgos Importantes</h3>
+            <p className="text-sm text-gray-600 mb-3">Haz clic en un hallazgo para ver el examen completo</p>
             <ul className="space-y-3">
-              {report.data.keyFindings.map((finding, index) => (
-                <li key={index} className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <span className="text-amber-600 mt-0.5">⚠️</span>
-                  <span className="text-gray-700 flex-1">{finding}</span>
-                </li>
-              ))}
+              {report.data.keyFindings.map((finding, index) => {
+                const findingContent = (
+                  <>
+                    <span className="text-amber-600 mt-0.5">⚠️</span>
+                    <span className="text-gray-700 flex-1">{finding.text}</span>
+                    {finding.examId && (
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
+                  </>
+                )
+
+                if (finding.examId) {
+                  return (
+                    <li key={index}>
+                      <Link
+                        href={`/dashboard/exams/${finding.examId}`}
+                        className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-all cursor-pointer group"
+                      >
+                        {findingContent}
+                      </Link>
+                    </li>
+                  )
+                }
+
+                return (
+                  <li key={index} className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    {findingContent}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
@@ -281,17 +311,27 @@ export default function HealthReportClient({ reportId }: { reportId: string }) {
         {report.data.examsAnalyzed && report.data.examsAnalyzed.length > 0 && (
           <div className="bg-white rounded-lg shadow mb-6 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">📊 Exámenes Analizados</h3>
+            <p className="text-sm text-gray-600 mb-3">Haz clic en cualquier examen para ver su detalle completo</p>
             <div className="space-y-2">
               {report.data.examsAnalyzed.map((exam, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <Link
+                  key={index}
+                  href={`/dashboard/exams/${exam.id}`}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-teal-50 hover:border-teal-300 border border-gray-200 transition-all cursor-pointer group"
+                >
                   <div>
-                    <p className="font-medium text-gray-900">{exam.type}</p>
+                    <p className="font-medium text-gray-900 group-hover:text-teal-700">{exam.type}</p>
                     <p className="text-sm text-gray-600">{exam.institution}</p>
                   </div>
-                  <p className="text-sm text-gray-500">
-                    {new Date(exam.date).toLocaleDateString('es-ES')}
-                  </p>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-500">
+                      {new Date(exam.date).toLocaleDateString('es-ES')}
+                    </p>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>

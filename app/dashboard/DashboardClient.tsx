@@ -33,7 +33,10 @@ interface HealthReport {
   generatedAt: Date
   summary?: string
   overallStatus?: 'good' | 'attention' | 'concerning'
-  keyFindings?: string[]
+  keyFindings?: Array<{
+    text: string
+    examId?: string
+  }>
   examCount?: number
 }
 
@@ -406,7 +409,7 @@ export default function DashboardClient({ user, medicalExams, appointments }: Pr
                               {report.keyFindings.map((finding, index) => (
                                 <li key={index} className="text-sm text-gray-600 flex items-start">
                                   <span className="mr-2">•</span>
-                                  <span className="line-clamp-1">{finding}</span>
+                                  <span className="line-clamp-1">{finding.text}</span>
                                 </li>
                               ))}
                             </ul>

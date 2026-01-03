@@ -9,6 +9,8 @@ interface ExamResult {
   unit?: string
   normalRange?: string
   isAbnormal?: boolean
+  examId?: string
+  examDate?: Date
 }
 
 interface ExamData {
@@ -41,7 +43,10 @@ interface TrendData {
 interface HealthAdvice {
   summary: string
   overallStatus: 'good' | 'attention' | 'concerning'
-  keyFindings: string[]
+  keyFindings: Array<{
+    text: string
+    examId?: string
+  }>
   recommendations: {
     diet: string[]
     exercise: string[]
@@ -135,7 +140,11 @@ function analyzeHealthTrends(exams: ExamData[]): {
       })
 
       if (result.isAbnormal) {
-        abnormalValues.push(result)
+        abnormalValues.push({
+          ...result,
+          examId: exam.id,
+          examDate: exam.examDate,
+        })
       }
     }
   }
@@ -203,7 +212,7 @@ async function generateAIHealthAdvice(
     return {
       summary: 'No se pudo generar análisis con IA. Configure GEMINI_API_KEY.',
       overallStatus: 'attention',
-      keyFindings: ['Configuración de IA pendiente'],
+      keyFindings: [{ text: 'Configuración de IA pendiente' }],
       recommendations: {
         diet: ['Mantén una dieta equilibrada'],
         exercise: ['Realiza actividad física regular'],
@@ -291,7 +300,41 @@ Responde SOLO con un objeto JSON válido con esta estructura exacta:
       throw new Error('No se pudo extraer JSON de la respuesta de IA')
     }
 
-    const advice: HealthAdvice = JSON.parse(jsonMatch[0])
+    const rawAdvice = JSON.parse(jsonMatch[0])
+
+    // Post-procesar hallazgos para agregar exam IDs
+    const keyFindings = (rawAdvice.keyFindings || []).map((finding: any) => {
+      // Si ya es un objeto con examId, devolverlo tal cual
+      if (typeof finding === 'object' && finding !== null && 'text' in finding) {
+        return finding
+      }
+
+      // Convertir a string si no lo es
+      const findingText = typeof finding === 'string' ? finding : String(finding)
+
+      // Buscar si este hallazgo menciona algún valor anormal
+      for (const abnormal of abnormalValues) {
+        const testName = abnormal.test.toLowerCase()
+        const value = abnormal.value
+
+        // Si el hallazgo menciona el nombre del test y el valor, asociar con ese examen
+        if (findingText.toLowerCase().includes(testName) ||
+            (value && findingText.includes(value))) {
+          return {
+            text: findingText,
+            examId: abnormal.examId,
+          }
+        }
+      }
+
+      // Si no se encontró match, devolver sin examId
+      return { text: findingText }
+    })
+
+    const advice: HealthAdvice = {
+      ...rawAdvice,
+      keyFindings,
+    }
 
     return advice
   } catch (error) {
@@ -301,7 +344,10 @@ Responde SOLO con un objeto JSON válido con esta estructura exacta:
     return {
       summary: `Se analizaron ${exams.length} exámenes. ${abnormalValues.length > 0 ? `Se encontraron ${abnormalValues.length} valores fuera de rango que requieren atención.` : 'La mayoría de los valores están dentro de los rangos normales.'}`,
       overallStatus: abnormalValues.length > 3 ? 'concerning' : abnormalValues.length > 0 ? 'attention' : 'good',
-      keyFindings: abnormalValues.slice(0, 5).map(v => `${v.test}: ${v.value} ${v.unit || ''} (rango normal: ${v.normalRange || 'no especificado'})`),
+      keyFindings: abnormalValues.slice(0, 5).map(v => ({
+        text: `${v.test}: ${v.value} ${v.unit || ''} (rango normal: ${v.normalRange || 'no especificado'})`,
+        examId: v.examId,
+      })),
       recommendations: {
         diet: ['Mantén una dieta balanceada rica en frutas y verduras'],
         exercise: ['Realiza al menos 30 minutos de actividad física moderada, 5 días a la semana'],

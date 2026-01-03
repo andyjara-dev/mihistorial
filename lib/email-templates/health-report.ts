@@ -16,7 +16,10 @@ function getResendClient(): Resend {
 interface HealthAdvice {
   summary: string
   overallStatus: 'good' | 'attention' | 'concerning'
-  keyFindings: string[]
+  keyFindings: Array<{
+    text: string
+    examId?: string
+  }>
   recommendations: {
     diet: string[]
     exercise: string[]
@@ -115,7 +118,7 @@ function generateHealthReportHTML(params: EmailParams): string {
         <h3 style="color: #0F766E; margin-bottom: 15px; font-size: 18px;">🔍 Hallazgos Importantes</h3>
         <ul style="margin: 0; padding-left: 20px;">
           ${reportData.keyFindings.map(finding => `
-            <li style="margin-bottom: 8px; color: #374151;">${finding}</li>
+            <li style="margin-bottom: 8px; color: #374151;">${finding.text}</li>
           `).join('')}
         </ul>
       </div>

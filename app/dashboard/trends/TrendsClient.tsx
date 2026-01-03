@@ -459,7 +459,10 @@ export default function TrendsClient() {
 
             {/* Tabla de valores */}
             <div className="overflow-x-auto">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Valores</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Historial de Valores</h3>
+                <p className="text-sm text-gray-600">Haz clic en cualquier fila para ver el examen completo</p>
+              </div>
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -478,15 +481,21 @@ export default function TrendsClient() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {[...selectedMeasurement.values].reverse().map((value, index) => (
                     <tr
                       key={index}
-                      className={value.isAbnormal ? 'bg-red-50' : ''}
+                      className={`cursor-pointer transition-colors group ${
+                        value.isAbnormal
+                          ? 'bg-red-50 hover:bg-red-100'
+                          : 'hover:bg-teal-50'
+                      }`}
                       onClick={() => router.push(`/dashboard/exams/${value.examId}`)}
-                      style={{ cursor: 'pointer' }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(value.date).toLocaleDateString('es-ES', {
@@ -521,6 +530,11 @@ export default function TrendsClient() {
                             Normal
                           </span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <svg className="w-5 h-5 text-gray-400 group-hover:text-teal-600 transition-colors inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </td>
                     </tr>
                   ))}
