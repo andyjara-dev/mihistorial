@@ -74,27 +74,13 @@ export async function POST(
       },
     })
 
-    // Leer el archivo del disco
-    const fs = await import('fs').then(m => m.promises)
-    const fileBuffer = await fs.readFile(exam.document.filePath)
-
-    // Desencriptar el archivo
-    const crypto = await import('crypto')
-    const decipher = crypto.createDecipheriv(
-      'aes-256-gcm',
-      Buffer.from(user.encryptionKey, 'hex'),
-      Buffer.from(exam.document.encryptionIv, 'hex')
+    // Leer y desencriptar el archivo usando la función helper
+    const { readEncryptedFile } = await import('@/lib/file-storage')
+    const decryptedBuffer = await readEncryptedFile(
+      exam.document.filePath,
+      exam.document.encryptionIv,
+      user.encryptionKey
     )
-
-    // Extraer tag del archivo encriptado (últimos 16 bytes)
-    const encryptedData = fileBuffer.slice(0, -16)
-    const authTag = fileBuffer.slice(-16)
-    decipher.setAuthTag(authTag)
-
-    const decryptedBuffer = Buffer.concat([
-      decipher.update(encryptedData),
-      decipher.final(),
-    ])
 
     // Procesar con IA en segundo plano
     try {
