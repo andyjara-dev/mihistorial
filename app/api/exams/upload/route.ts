@@ -290,6 +290,13 @@ export async function POST(request: NextRequest) {
         })
     } catch (error) {
       console.error('Error al extraer texto del PDF:', error)
+      // Marcar como fallido si falla la extracción del PDF
+      await prisma.medicalExam.update({
+        where: { id: medicalExam.id },
+        data: {
+          processingStatus: 'failed',
+        },
+      }).catch(err => console.error('Error al actualizar estado fallido:', err))
     }
 
     return NextResponse.json(

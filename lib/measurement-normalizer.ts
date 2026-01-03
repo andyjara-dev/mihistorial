@@ -180,6 +180,10 @@ const MEASUREMENT_ALIASES: Record<string, string[]> = {
  * Normaliza el nombre de una medición a su forma estándar
  */
 export function normalizeMeasurementName(rawName: string): string {
+  if (!rawName || typeof rawName !== 'string') {
+    return 'Desconocido'
+  }
+
   const normalized = rawName.toLowerCase().trim()
 
   // Primero, buscar coincidencias exactas (más específicas)
@@ -224,6 +228,11 @@ function capitalizeWords(text: string): string {
  * Extrae el valor numérico de un string (ej: "120 mg/dL" -> 120)
  */
 export function extractNumericValue(value: string): number | null {
+  // Validar que el valor no sea null o undefined
+  if (!value || typeof value !== 'string') {
+    return null
+  }
+
   // Remover comas de miles (ej: 1,234 -> 1234)
   const cleaned = value.replace(/,/g, '')
 

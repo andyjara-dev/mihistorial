@@ -535,7 +535,7 @@ const CONVERSION_FACTORS: Record<string, Array<[string, string, number]>> = {
  * Normaliza una unidad (elimina espacios, convierte a minúsculas, estandariza símbolos)
  */
 function normalizeUnit(unit: string | undefined): string {
-  if (!unit) return ''
+  if (!unit || typeof unit !== 'string') return ''
 
   return unit
     .trim()

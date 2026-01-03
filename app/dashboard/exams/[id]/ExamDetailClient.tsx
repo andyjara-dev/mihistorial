@@ -53,6 +53,7 @@ export default function ExamDetailClient({ examId }: { examId: string }) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [retrying, setRetrying] = useState(false)
 
   useEffect(() => {
     const fetchExam = async () => {
@@ -74,6 +75,38 @@ export default function ExamDetailClient({ examId }: { examId: string }) {
 
     fetchExam()
   }, [examId])
+
+  const handleRetryProcessing = async () => {
+    if (!exam) return
+
+    setRetrying(true)
+    try {
+      const response = await fetch(`/api/exams/${examId}/retry`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al reintentar procesamiento')
+      }
+
+      // Actualizar el estado local
+      setExam({
+        ...exam,
+        processingStatus: 'processing',
+        aiProcessed: false,
+      })
+
+      // Recargar después de unos segundos para ver el progreso
+      setTimeout(() => {
+        window.location.reload()
+      }, 3000)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al reintentar')
+    } finally {
+      setRetrying(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -328,22 +361,51 @@ export default function ExamDetailClient({ examId }: { examId: string }) {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Estado del Procesamiento</p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className={`text-sm px-3 py-1 rounded-full ${
                     exam.processingStatus === 'completed'
                       ? 'bg-green-100 text-green-800'
                       : exam.processingStatus === 'processing'
                       ? 'bg-yellow-100 text-yellow-800'
+                      : exam.processingStatus === 'failed'
+                      ? 'bg-red-100 text-red-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {exam.processingStatus}
+                    {exam.processingStatus === 'completed' ? 'Completado' :
+                     exam.processingStatus === 'processing' ? 'Procesando' :
+                     exam.processingStatus === 'failed' ? 'Fallido' :
+                     exam.processingStatus}
                   </span>
                   {exam.aiProcessed && (
                     <span className="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full">
                       IA Procesado
                     </span>
                   )}
+                  {(exam.processingStatus === 'failed' || exam.processingStatus === 'processing') && (
+                    <button
+                      onClick={handleRetryProcessing}
+                      disabled={retrying}
+                      className="text-sm px-3 py-1 bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:bg-gray-400 transition-colors flex items-center gap-1"
+                      title="Reintentar procesamiento con IA"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      {retrying ? 'Reintentando...' : 'Reintentar'}
+                    </button>
+                  )}
                 </div>
+                {exam.processingStatus === 'failed' && (
+                  <p className="text-xs text-red-600 mt-2">
+                    ⚠️ El procesamiento falló. Puede deberse a cuota de IA excedida o error temporal.
+                    Haz clic en "Reintentar" para volver a procesar.
+                  </p>
+                )}
+                {exam.processingStatus === 'processing' && !exam.aiProcessed && (
+                  <p className="text-xs text-yellow-600 mt-2">
+                    ⏳ Si el procesamiento está tomando mucho tiempo, puede reintentar.
+                  </p>
+                )}
               </div>
             </div>
 
