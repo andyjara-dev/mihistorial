@@ -321,7 +321,7 @@ export default function UploadPage() {
                             <select
                               value={fileData.examType}
                               onChange={(e) => updateFileData(index, 'examType', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900"
                               required
                               disabled={loading}
                             >
@@ -341,14 +341,14 @@ export default function UploadPage() {
 
                           {/* Institución */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-900 mb-1">
                               Centro médico <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
                               value={fileData.institution}
                               onChange={(e) => updateFileData(index, 'institution', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900"
                               placeholder="Ej: UC Christus"
                               required
                               disabled={loading}
@@ -357,7 +357,7 @@ export default function UploadPage() {
 
                           {/* Fecha */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-900 mb-1">
                               Fecha del examen <span className="text-red-500">*</span>
                             </label>
                             <input
