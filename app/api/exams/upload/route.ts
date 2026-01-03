@@ -278,15 +278,20 @@ export async function POST(request: NextRequest) {
             // No fallar el procesamiento del examen si falla el reporte
           }
         })
-        .catch((error) => {
+        .catch(async (error) => {
           console.error('Error al procesar con IA:', error)
           // Actualizar estado a fallido
-          return prisma.medicalExam.update({
-            where: { id: medicalExam.id },
-            data: {
-              processingStatus: 'failed',
-            },
-          })
+          try {
+            await prisma.medicalExam.update({
+              where: { id: medicalExam.id },
+              data: {
+                processingStatus: 'failed',
+              },
+            })
+            console.log(`❌ Examen ${medicalExam.id} marcado como fallido`)
+          } catch (updateError) {
+            console.error('❌ Error crítico: No se pudo actualizar estado a fallido:', updateError)
+          }
         })
     } catch (error) {
       console.error('Error al extraer texto del PDF:', error)

@@ -128,15 +128,20 @@ export async function POST(
             console.error('Error al disparar generación de reporte:', error)
           }
         })
-        .catch((error) => {
+        .catch(async (error) => {
           console.error('Error al procesar con IA en reintento:', error)
           // Actualizar estado a fallido
-          return prisma.medicalExam.update({
-            where: { id: exam.id },
-            data: {
-              processingStatus: 'failed',
-            },
-          })
+          try {
+            await prisma.medicalExam.update({
+              where: { id: exam.id },
+              data: {
+                processingStatus: 'failed',
+              },
+            })
+            console.log(`❌ Examen ${exam.id} marcado como fallido en reintento`)
+          } catch (updateError) {
+            console.error('❌ Error crítico: No se pudo actualizar estado a fallido:', updateError)
+          }
         })
     } catch (error) {
       console.error('Error al extraer texto del PDF en reintento:', error)
