@@ -425,6 +425,30 @@ export async function generateHealthReport(
   try {
     console.log(`🏥 Generando reporte de salud para usuario ${userId}...`)
 
+    // Verificar si ya existe un reporte generado hoy
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const existingReportToday = await prisma.healthReport.findFirst({
+      where: {
+        userId,
+        generatedAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+      orderBy: {
+        generatedAt: 'desc',
+      },
+    })
+
+    if (existingReportToday) {
+      console.log(`⏭️ Ya existe un reporte de salud generado hoy (${existingReportToday.id}). Omitiendo generación.`)
+      return existingReportToday.id
+    }
+
     // Obtener configuración del usuario
     const user = await prisma.user.findUnique({
       where: { id: userId },
