@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 import { getMeasurementDescription } from '@/lib/measurement-descriptions'
 
 interface ExamData {
@@ -97,12 +98,15 @@ export default function ExamDetailClient({ examId }: { examId: string }) {
         aiProcessed: false,
       })
 
+      // Mostrar mensaje de éxito
+      toast.success('Reprocesamiento iniciado. Recargando página...')
+
       // Recargar después de unos segundos para ver el progreso
       setTimeout(() => {
         window.location.reload()
       }, 3000)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al reintentar')
+      toast.error(err instanceof Error ? err.message : 'Error al reintentar')
     } finally {
       setRetrying(false)
     }
@@ -198,11 +202,12 @@ export default function ExamDetailClient({ examId }: { examId: string }) {
         throw new Error('Error al eliminar el examen')
       }
 
-      // Redirigir al dashboard después de eliminar
+      // Mostrar mensaje de éxito y redirigir al dashboard
+      toast.success('Examen eliminado exitosamente')
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
-      alert('Error al eliminar el examen. Por favor intenta de nuevo.')
+      toast.error('Error al eliminar el examen. Por favor intenta de nuevo.')
       setDeleting(false)
       setShowDeleteConfirm(false)
     }

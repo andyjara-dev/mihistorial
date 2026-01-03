@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface FileUploadStatus {
   file: File
@@ -187,7 +188,9 @@ export default function UploadPage() {
 
     // Mostrar resumen
     if (successCount > 0 && errorCount === 0) {
-      alert(`✅ ${successCount} ${successCount === 1 ? 'examen subido' : 'exámenes subidos'} exitosamente`)
+      toast.success(`${successCount} ${successCount === 1 ? 'examen subido' : 'exámenes subidos'} exitosamente`, {
+        duration: 3000,
+      })
 
       // Redirigir al dashboard después de 2 segundos
       setTimeout(() => {
@@ -195,7 +198,9 @@ export default function UploadPage() {
         router.refresh()
       }, 2000)
     } else if (successCount > 0 && errorCount > 0) {
-      alert(`⚠️ ${successCount} exitosos, ${errorCount} fallidos.\nRevisa los detalles abajo.`)
+      toast.error(`${successCount} exitosos, ${errorCount} fallidos. Revisa los detalles abajo.`, {
+        duration: 5000,
+      })
     } else {
       setError('No se pudo subir ningún archivo. Revisa los errores.')
     }
