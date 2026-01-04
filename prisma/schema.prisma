@@ -131,14 +131,30 @@ model Appointment {
   encryptedNotes  String?  @db.Text
   encryptionIv    String?
 
+  // Email original (AI-assisted)
+  encryptedEmailData String? @db.Text
+  emailEncryptionIv  String?
+
+  // Source tracking
+  sourceType      String   @default("manual") // "manual" | "ai_assisted"
+
   // Estado
   status          String   @default("scheduled") // scheduled, completed, cancelled
+
+  // Reminder tracking
+  reminder1Sent   Boolean  @default(false)  // 3 días antes
+  reminder1SentAt DateTime?
+  reminder2Sent   Boolean  @default(false)  // 1 día antes
+  reminder2SentAt DateTime?
+  sendReminders   Boolean  @default(true)   // Permitir recordatorios
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([userId])
   @@index([appointmentDate])
+  @@index([status])
+  @@index([reminder1Sent, reminder2Sent])
 }
 
 // Documentos (PDFs y otros archivos)

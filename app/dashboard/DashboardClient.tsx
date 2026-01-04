@@ -202,6 +202,15 @@ export default function DashboardClient({ user, medicalExams, appointments }: Pr
             Subir Nuevo Examen
           </button>
           <button
+            onClick={() => router.push('/dashboard/appointments')}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-medium flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Ver Todas las Citas
+          </button>
+          <button
             onClick={() => router.push('/dashboard/trends')}
             className="bg-gradient-to-r from-blue-900 to-teal-500 text-white px-6 py-3 rounded-lg hover:from-blue-800 hover:to-teal-600 transition font-medium flex items-center gap-2"
           >
