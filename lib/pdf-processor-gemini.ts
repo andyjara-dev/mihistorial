@@ -82,8 +82,9 @@ Por favor, extrae la siguiente información (si está disponible):
 - Resultados principales (valores numéricos, rangos normales, etc.)
 - Diagnósticos o comentarios
 - Valores fuera de rango (si los hay)
+- Asegúrate de leer correctamente el archivo. A veces estos vienen con el resultado actual y un resultado anterior (de fecha pasada) en columnas, en ese caso extrae solo el resultado actual. 
 
-Responde SOLO con un objeto JSON válido, sin texto adicional. Si algún campo no está disponible, usa null.
+Responde SOLO con un objeto JSON válido, sin texto adicional. Si algún campo no está disponible, usa null. 
 
 Formato de respuesta:
 {
