@@ -364,7 +364,7 @@ export default function UploadPage() {
                               type="date"
                               value={fileData.examDate}
                               onChange={(e) => updateFileData(index, 'examDate', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900"
                               required
                               disabled={loading}
                               max={new Date().toISOString().split('T')[0]}
