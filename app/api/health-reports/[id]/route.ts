@@ -15,9 +15,12 @@ export async function GET(
 
     const { id: reportId } = await params
 
-    // Obtener el reporte
-    const report = await prisma.healthReport.findUnique({
-      where: { id: reportId },
+    // Obtener el reporte (solo si no está eliminado)
+    const report = await prisma.healthReport.findFirst({
+      where: {
+        id: reportId,
+        deletedAt: null,  // Solo si está activo
+      },
     })
 
     if (!report) {
@@ -70,6 +73,61 @@ export async function GET(
     })
   } catch (error) {
     console.error('Error al obtener reporte:', error)
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const { id: reportId } = await params
+
+    // Obtener el reporte
+    const report = await prisma.healthReport.findUnique({
+      where: { id: reportId },
+    })
+
+    if (!report) {
+      return NextResponse.json({ error: 'Reporte no encontrado' }, { status: 404 })
+    }
+
+    // Verificar que el reporte pertenece al usuario
+    if (report.userId !== session.user.id) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+    }
+
+    // Verificar si ya está eliminado
+    if (report.deletedAt !== null) {
+      return NextResponse.json({ error: 'El reporte ya fue eliminado' }, { status: 400 })
+    }
+
+    // Soft delete: marcar deletedAt con timestamp actual
+    const deletedReport = await prisma.healthReport.update({
+      where: { id: reportId },
+      data: {
+        deletedAt: new Date(),
+      },
+    })
+
+    console.log(`🗑️ Reporte marcado como eliminado (soft delete): ${reportId}`)
+
+    return NextResponse.json({
+      message: 'Reporte eliminado exitosamente',
+      deletedReportId: reportId,
+      deletedAt: deletedReport.deletedAt,
+    })
+  } catch (error) {
+    console.error('Error al eliminar reporte:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

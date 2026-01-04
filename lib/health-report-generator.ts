@@ -425,7 +425,7 @@ export async function generateHealthReport(
   try {
     console.log(`🏥 Generando reporte de salud para usuario ${userId}...`)
 
-    // Verificar si ya existe un reporte generado hoy
+    // Verificar si ya existe un reporte generado hoy (sin importar si está eliminado)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
@@ -438,6 +438,8 @@ export async function generateHealthReport(
           gte: today,
           lt: tomorrow,
         },
+        // CRÍTICO: NO filtrar por deletedAt aquí
+        // Queremos bloquear generación incluso si el reporte fue eliminado
       },
       orderBy: {
         generatedAt: 'desc',
@@ -445,7 +447,11 @@ export async function generateHealthReport(
     })
 
     if (existingReportToday) {
-      console.log(`⏭️ Ya existe un reporte de salud generado hoy (${existingReportToday.id}). Omitiendo generación.`)
+      const wasDeleted = existingReportToday.deletedAt !== null
+      console.log(
+        `⏭️ Ya existe un reporte de salud generado hoy (${existingReportToday.id}, ` +
+        `${wasDeleted ? 'ELIMINADO' : 'activo'}). Omitiendo generación.`
+      )
       return existingReportToday.id
     }
 

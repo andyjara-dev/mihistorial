@@ -19,10 +19,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
 
-    // Obtener todos los reportes del usuario
+    // Obtener todos los reportes ACTIVOS del usuario (no eliminados)
     const reports = await prisma.healthReport.findMany({
       where: {
         userId: session.user.id,
+        deletedAt: null,  // Solo reportes activos
       },
       orderBy: {
         generatedAt: 'desc',

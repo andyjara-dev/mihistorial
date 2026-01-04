@@ -187,8 +187,12 @@ model HealthReport {
   emailSent    Boolean @default(false)
   emailSentAt  DateTime?
 
+  // Soft delete
+  deletedAt    DateTime? // NULL = activo, NOT NULL = eliminado
+
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([generatedAt])
+  @@index([deletedAt])
 }

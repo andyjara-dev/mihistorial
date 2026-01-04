@@ -42,6 +42,10 @@ export default function HealthReportClient({ reportId }: { reportId: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Estados para eliminación
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
   useEffect(() => {
     const fetchReport = async () => {
       try {
@@ -62,6 +66,30 @@ export default function HealthReportClient({ reportId }: { reportId: string }) {
 
     fetchReport()
   }, [reportId])
+
+  const handleDelete = async () => {
+    if (!report) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/health-reports/${reportId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al eliminar el reporte')
+      }
+
+      console.log('✅ Reporte eliminado exitosamente')
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('Error al eliminar reporte:', err)
+      alert(err instanceof Error ? err.message : 'Error al eliminar el reporte')
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -122,16 +150,29 @@ export default function HealthReportClient({ reportId }: { reportId: string }) {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="text-teal-600 hover:text-teal-700"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="text-teal-600 hover:text-teal-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-900">Reporte de Salud</h1>
+            </div>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={deleting}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Reporte de Salud</h1>
+              {deleting ? 'Eliminando...' : 'Eliminar Reporte'}
+            </button>
           </div>
         </div>
       </header>
@@ -362,6 +403,62 @@ export default function HealthReportClient({ reportId }: { reportId: string }) {
           </Link>
         </div>
       </main>
+
+      {/* Modal de confirmación de eliminación */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  ¿Eliminar este reporte?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Esta acción no se puede deshacer. El reporte será eliminado permanentemente.
+                </p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-yellow-900 font-medium mb-1">⚠️ Importante</p>
+                  <p className="text-sm text-yellow-800">
+                    Incluso después de eliminar este reporte, no podrás generar otro reporte
+                    para hoy. Solo se permite un reporte por día.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                    className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition font-medium disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {deleting ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Eliminando...
+                      </>
+                    ) : (
+                      'Sí, eliminar'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
