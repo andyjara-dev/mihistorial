@@ -67,7 +67,7 @@ REGLAS IMPORTANTES:
 - Si encuentras "14:30 hrs" o "2:30 PM", conviértelo a formato 24 horas
 - Si no encuentras algún dato, usa null (no strings vacíos)
 
-Responde SOLO con un objeto JSON válido (sin markdown, sin ```json):
+Responde SOLO con un objeto JSON válido (sin markdown, sin bloques de código):
 {
   "doctorName": "string o null",
   "specialty": "string o null",
