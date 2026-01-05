@@ -96,12 +96,13 @@ function decryptExamData(exam: any, userEncryptionKey: string): ExamData {
     // Asegurar que examDate sea un objeto Date
     const examDate = exam.examDate instanceof Date ? exam.examDate : new Date(exam.examDate)
 
+    // Spread data first, then override examDate to ensure it's always a Date object
     return {
       id: exam.id,
       examType: exam.examType,
       institution: exam.institution,
-      examDate,
       ...data,
+      examDate, // Override any examDate from data to ensure it's a Date object
     }
   } catch (error) {
     console.error(`Error al desencriptar examen ${exam.id}:`, error)
@@ -190,11 +191,15 @@ function analyzeHealthTrends(exams: ExamData[]): {
 
     trends.push({
       measurement,
-      values: sortedResults.map((r: any) => ({
-        date: r._examDate,
-        value: r.value,
-        isAbnormal: r.isAbnormal,
-      })),
+      values: sortedResults.map((r: any) => {
+        // Asegurar que _examDate sea un Date object
+        const examDate = r._examDate instanceof Date ? r._examDate : new Date(r._examDate)
+        return {
+          date: examDate,
+          value: r.value,
+          isAbnormal: r.isAbnormal,
+        }
+      }),
       trend,
       isAbnormal: results.some(r => r.isAbnormal),
     })
@@ -234,12 +239,16 @@ async function generateAIHealthAdvice(
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
     // Preparar datos estructurados para el prompt
-    const examsData = exams.map(exam => ({
-      date: exam.examDate.toISOString().split('T')[0],
-      type: exam.examType,
-      institution: exam.institution,
-      results: exam.results || [],
-    }))
+    const examsData = exams.map(exam => {
+      // Asegurar que examDate sea un Date object antes de convertir a ISO
+      const examDate = exam.examDate instanceof Date ? exam.examDate : new Date(exam.examDate)
+      return {
+        date: examDate.toISOString().split('T')[0],
+        type: exam.examType,
+        institution: exam.institution,
+        results: exam.results || [],
+      }
+    })
 
     const trendsData = trends.map(t => ({
       measurement: t.measurement,
@@ -507,12 +516,16 @@ export async function generateHealthReport(
       examCount: exams.length,
       periodMonths,
       trends: trends.slice(0, 10), // Limitar a 10 tendencias más relevantes
-      examsAnalyzed: exams.map(e => ({
-        id: e.id,
-        type: e.examType,
-        date: e.examDate,
-        institution: e.institution,
-      })),
+      examsAnalyzed: exams.map(e => {
+        // Asegurar que examDate sea un Date object antes de serializar
+        const examDate = e.examDate instanceof Date ? e.examDate : new Date(e.examDate)
+        return {
+          id: e.id,
+          type: e.examType,
+          date: examDate,
+          institution: e.institution,
+        }
+      }),
       generatedAt: new Date(),
     }
 
