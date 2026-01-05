@@ -15,6 +15,8 @@ services:
     environment:
       NODE_ENV: production
       AUTH_TRUST_HOST: "true"
+      TZ: America/Santiago
+
     volumes:
       - uploads_data:/app/uploads
     networks:
@@ -23,8 +25,10 @@ services:
     # command: se omite para usar el CMD del Dockerfile
 
 volumes:
-  uploads_data:
+  - uploads_data:
     driver: local
+  - /etc/localtime:/etc/localtime:ro
+  - /etc/timezone:/etc/timezone:ro
 
 networks:
   health-tracker-network:
