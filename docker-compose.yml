@@ -16,19 +16,17 @@ services:
       NODE_ENV: production
       AUTH_TRUST_HOST: "true"
       TZ: America/Santiago
-
     volumes:
       - uploads_data:/app/uploads
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - health-tracker-network
-    # Usar el docker-entrypoint.sh que ya maneja migraciones
-    # command: se omite para usar el CMD del Dockerfile
+    # Usa el CMD del Dockerfile (entrypoint maneja migraciones)
 
 volumes:
-  - uploads_data:
+  uploads_data:
     driver: local
-  - /etc/localtime:/etc/localtime:ro
-  - /etc/timezone:/etc/timezone:ro
 
 networks:
   health-tracker-network:
