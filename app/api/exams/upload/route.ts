@@ -257,24 +257,15 @@ export async function POST(request: NextRequest) {
             },
           })
 
-          // NUEVO: Generar reporte de salud automáticamente
+          // NUEVO: Encolar reporte de salud con debouncing
           try {
-            const { generateHealthReport } = await import('@/lib/health-report-generator')
-            console.log(`🏥 Disparando generación de reporte de salud para usuario ${user.id}...`)
+            const { healthReportQueue } = await import('@/lib/health-report-queue')
+            console.log(`🏥 Encolando generación de reporte de salud para usuario ${user.id}...`)
 
-            // Ejecutar en background (no bloquear)
-            generateHealthReport(user.id, user.encryptionKey, medicalExam.id)
-              .then(reportId => {
-                if (reportId) {
-                  console.log(`✅ Reporte de salud generado: ${reportId}`)
-                }
-              })
-              .catch(err => {
-                console.error('❌ Error al generar reporte de salud:', err)
-                // No fallar el procesamiento del examen si falla el reporte
-              })
+            // Encolar con debouncing de 30s para consolidar múltiples exámenes
+            healthReportQueue.enqueueReport(user.id, user.encryptionKey, medicalExam.id)
           } catch (error) {
-            console.error('Error al disparar generación de reporte:', error)
+            console.error('Error al encolar generación de reporte:', error)
             // No fallar el procesamiento del examen si falla el reporte
           }
         })

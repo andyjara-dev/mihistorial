@@ -110,22 +110,15 @@ export async function POST(
 
           console.log(`✅ Reintento exitoso para examen ${exam.id}`)
 
-          // Generar reporte de salud automáticamente
+          // Encolar reporte de salud con debouncing
           try {
-            const { generateHealthReport } = await import('@/lib/health-report-generator')
-            console.log(`🏥 Disparando generación de reporte de salud para usuario ${user.id}...`)
+            const { healthReportQueue } = await import('@/lib/health-report-queue')
+            console.log(`🏥 Encolando generación de reporte de salud para usuario ${user.id}...`)
 
-            generateHealthReport(user.id, user.encryptionKey, exam.id)
-              .then(reportId => {
-                if (reportId) {
-                  console.log(`✅ Reporte de salud generado: ${reportId}`)
-                }
-              })
-              .catch(err => {
-                console.error('❌ Error al generar reporte de salud:', err)
-              })
+            // Encolar con debouncing de 30s para consolidar múltiples exámenes
+            healthReportQueue.enqueueReport(user.id, user.encryptionKey, exam.id)
           } catch (error) {
-            console.error('Error al disparar generación de reporte:', error)
+            console.error('Error al encolar generación de reporte:', error)
           }
         })
         .catch(async (error) => {
