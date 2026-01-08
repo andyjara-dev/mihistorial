@@ -185,3 +185,49 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   const bcrypt = require('bcrypt')
   return bcrypt.compare(password, hash)
 }
+
+/**
+ * Encripta metadatos sensibles como un objeto JSON
+ * Útil para encriptar campos como: {doctorName, location, institution}
+ */
+export function encryptMetadata(
+  metadata: Record<string, any>,
+  encryptedUserKey: string
+): { encrypted: string; iv: string } {
+  const jsonString = JSON.stringify(metadata)
+  return encryptData(jsonString, encryptedUserKey)
+}
+
+/**
+ * Desencripta metadatos previamente encriptados
+ * Retorna el objeto JSON original
+ */
+export function decryptMetadata<T = Record<string, any>>(
+  encryptedMetadata: string,
+  ivString: string,
+  encryptedUserKey: string
+): T {
+  const jsonString = decryptData(encryptedMetadata, ivString, encryptedUserKey)
+  return JSON.parse(jsonString) as T
+}
+
+/**
+ * Helper para migrar datos: encripta metadatos si aún no están encriptados
+ * Retorna null si no hay datos para encriptar
+ */
+export function migrateToEncryptedMetadata(
+  plainMetadata: Record<string, any>,
+  encryptedUserKey: string
+): { encrypted: string; iv: string } | null {
+  // Filtrar valores nulos/undefined/vacíos
+  const filteredMetadata = Object.entries(plainMetadata)
+    .filter(([_, value]) => value != null && value !== '')
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
+
+  // Si no hay metadatos válidos, retornar null
+  if (Object.keys(filteredMetadata).length === 0) {
+    return null
+  }
+
+  return encryptMetadata(filteredMetadata, encryptedUserKey)
+}

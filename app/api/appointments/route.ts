@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decryptData, encryptData } from '@/lib/encryption'
+import { getAppointmentMetadata, encryptAppointmentMetadata } from '@/lib/metadata-helpers'
 
 /**
  * GET /api/appointments
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Desencriptar notas si existen
+    // Desencriptar notas y metadatos si existen
     const decryptedAppointments = appointments.map(appointment => {
       let notes = null
 
@@ -64,12 +65,16 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Desencriptar metadatos
+      const metadata = getAppointmentMetadata(appointment, user.encryptionKey)
+
       return {
         id: appointment.id,
-        doctorName: appointment.doctorName,
+        doctorName: metadata.doctorName,
         specialty: appointment.specialty,
         appointmentDate: appointment.appointmentDate,
-        location: appointment.location,
+        location: metadata.location,
+        institution: metadata.institution,
         status: appointment.status,
         sourceType: appointment.sourceType,
         sendReminders: appointment.sendReminders,
@@ -151,14 +156,25 @@ export async function POST(request: NextRequest) {
       encryptionIv = encrypted.iv
     }
 
+    // Encriptar metadatos
+    const metadata = encryptAppointmentMetadata(
+      {
+        doctorName: doctorName.trim(),
+        location: location?.trim(),
+      },
+      user.encryptionKey
+    )
+
     // Crear cita
     const appointment = await prisma.appointment.create({
       data: {
         userId: session.user.id,
-        doctorName: doctorName.trim(),
+        doctorName: doctorName.trim(), // Campo legacy
         specialty: specialty.trim(),
         appointmentDate: parsedDate,
-        location: location?.trim() || null,
+        location: location?.trim() || null, // Campo legacy
+        encryptedMetadata: metadata.encryptedMetadata,
+        metadataIv: metadata.metadataIv,
         encryptedNotes,
         encryptionIv,
         sourceType: 'manual',
@@ -167,19 +183,23 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Desencriptar metadatos para respuesta
+    const responseMetadata = getAppointmentMetadata(appointment, user.encryptionKey)
+
     return NextResponse.json(
       {
         message: 'Cita creada exitosamente',
         appointment: {
           id: appointment.id,
-          doctorName: appointment.doctorName,
+          doctorName: responseMetadata.doctorName,
           specialty: appointment.specialty,
           appointmentDate: appointment.appointmentDate,
-          location: appointment.location,
+          location: responseMetadata.location,
           status: appointment.status,
           sourceType: appointment.sourceType,
           sendReminders: appointment.sendReminders,
           notes,
+          createdAt: appointment.createdAt,
         },
       },
       { status: 201 }

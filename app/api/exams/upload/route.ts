@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptData } from '@/lib/encryption'
+import { encryptExamMetadata, encryptDocumentMetadata } from '@/lib/metadata-helpers'
 import { saveEncryptedFile } from '@/lib/file-storage'
 import crypto from 'crypto'
 // Procesador unificado que selecciona automáticamente según AI_PROVIDER en .env
@@ -148,11 +149,19 @@ export async function POST(request: NextRequest) {
         file.name
       )
 
+      // Encriptar metadatos del documento
+      const docMetadata = encryptDocumentMetadata(
+        { fileName: file.name },
+        user.encryptionKey
+      )
+
       // Crear nuevo documento en la BD
       document = await prisma.document.create({
         data: {
           userId: user.id,
-          fileName: file.name,
+          fileName: file.name, // Campo legacy (mantener por compatibilidad)
+          encryptedMetadata: docMetadata.encryptedMetadata,
+          metadataIv: docMetadata.metadataIv,
           fileType: file.type,
           fileSize: file.size,
           filePath,
@@ -174,6 +183,12 @@ export async function POST(request: NextRequest) {
       user.encryptionKey
     )
 
+    // Encriptar metadatos del examen
+    const examMetadata = encryptExamMetadata(
+      { examType, institution },
+      user.encryptionKey
+    )
+
     let medicalExam
 
     if (isUpdate && existingDocument && existingDocument.medicalExams.length > 0) {
@@ -183,6 +198,8 @@ export async function POST(request: NextRequest) {
         data: {
           examType,
           institution,
+          encryptedMetadata: examMetadata.encryptedMetadata,
+          metadataIv: examMetadata.metadataIv,
           examDate: new Date(examDate),
           encryptedData: encrypted,
           encryptionIv: iv,
@@ -198,6 +215,8 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           examType,
           institution,
+          encryptedMetadata: examMetadata.encryptedMetadata,
+          metadataIv: examMetadata.metadataIv,
           examDate: new Date(examDate),
           documentId: document.id,
           encryptedData: encrypted,

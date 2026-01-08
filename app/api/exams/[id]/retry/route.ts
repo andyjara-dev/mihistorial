@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decryptData } from '@/lib/encryption'
+import { getExamMetadata } from '@/lib/metadata-helpers'
 
 /**
  * Reintentar el procesamiento de un examen con IA
@@ -89,7 +90,10 @@ export async function POST(
 
       const pdfText = await extractTextFromPDF(decryptedBuffer)
 
-      processExamWithAI(pdfText, exam.examType, exam.institution)
+      // Desencriptar metadatos del examen
+      const examMetadata = getExamMetadata(exam, user.encryptionKey)
+
+      processExamWithAI(pdfText, examMetadata.examType, examMetadata.institution || '')
         .then(async (extractedData) => {
           // Encriptar los datos
           const { encrypted: encryptedData, iv: ivData } = encryptData(

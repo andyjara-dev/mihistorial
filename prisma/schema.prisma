@@ -93,8 +93,13 @@ model MedicalExam {
 
   // Datos básicos
   examType     String   // Tipo de examen: "Sangre", "Orina", "Imagenología", etc.
-  institution  String   // Institución que emitió el examen
+  institution  String?  // Institución que emitió el examen (deprecado, usar encryptedMetadata)
+  laboratory   String?  // Laboratorio (deprecado, usar encryptedMetadata)
   examDate     DateTime // Fecha del examen
+
+  // Metadatos sensibles encriptados (JSON: {examType, institution, laboratory})
+  encryptedMetadata String?  @db.Text
+  metadataIv        String?  // IV para metadatos
 
   // Datos encriptados (JSON con resultados del examen)
   encryptedData String  @db.Text
@@ -122,10 +127,15 @@ model Appointment {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Datos básicos
-  doctorName      String
+  doctorName      String?  // Deprecado, usar encryptedMetadata
   specialty       String
   appointmentDate DateTime
-  location        String?
+  location        String?  // Deprecado, usar encryptedMetadata
+  institution     String?  // Deprecado, usar encryptedMetadata
+
+  // Metadatos sensibles encriptados (JSON: {doctorName, location, institution})
+  encryptedMetadata String?  @db.Text
+  metadataIv        String?  // IV para metadatos
 
   // Notas encriptadas
   encryptedNotes  String?  @db.Text
@@ -164,9 +174,14 @@ model Document {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Datos del archivo
-  fileName      String
+  fileName      String?  // Deprecado, usar encryptedMetadata
   fileType      String   // "application/pdf", etc.
   fileSize      Int
+  documentType  String?  // Tipo de documento (deprecado, usar encryptedMetadata)
+
+  // Metadatos sensibles encriptados (JSON: {fileName, documentType})
+  encryptedMetadata String?  @db.Text
+  metadataIv        String?  // IV para metadatos
 
   // Ruta del archivo encriptado
   filePath      String

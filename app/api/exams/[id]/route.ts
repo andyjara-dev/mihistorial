@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decryptData } from '@/lib/encryption'
+import { getExamMetadata, getDocumentMetadata } from '@/lib/metadata-helpers'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -57,10 +58,20 @@ export async function GET(
       decryptedData = { error: 'No se pudieron desencriptar los datos' }
     }
 
+    // Desencriptar metadatos del examen
+    const examMetadata = getExamMetadata(exam, user.encryptionKey)
+
+    // Desencriptar metadatos del documento si existe
+    let documentMetadata = null
+    if (exam.document) {
+      documentMetadata = getDocumentMetadata(exam.document, user.encryptionKey)
+    }
+
     return NextResponse.json({
       id: exam.id,
-      examType: exam.examType,
-      institution: exam.institution,
+      examType: examMetadata.examType,
+      institution: examMetadata.institution,
+      laboratory: examMetadata.laboratory,
       examDate: exam.examDate,
       processingStatus: exam.processingStatus,
       aiProcessed: exam.aiProcessed,
@@ -68,7 +79,8 @@ export async function GET(
       updatedAt: exam.updatedAt,
       document: exam.document ? {
         id: exam.document.id,
-        fileName: exam.document.fileName,
+        fileName: documentMetadata?.fileName || exam.document.fileName,
+        documentType: documentMetadata?.documentType,
         fileType: exam.document.fileType,
         fileSize: exam.document.fileSize,
         uploadedAt: exam.document.uploadedAt,

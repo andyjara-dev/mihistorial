@@ -61,7 +61,7 @@ export async function checkAndSendReminders(): Promise<ReminderStats> {
       const result = await sendAppointmentReminderEmail({
         to: appointment.user.email,
         userName: `${appointment.user.firstName} ${appointment.user.lastName}`,
-        doctorName: appointment.doctorName,
+        doctorName: appointment.doctorName || 'No especificado',
         specialty: appointment.specialty,
         appointmentDate: appointment.appointmentDate,
         location: appointment.location || 'No especificada',
@@ -127,7 +127,7 @@ export async function checkAndSendReminders(): Promise<ReminderStats> {
       const result = await sendAppointmentReminderEmail({
         to: appointment.user.email,
         userName: `${appointment.user.firstName} ${appointment.user.lastName}`,
-        doctorName: appointment.doctorName,
+        doctorName: appointment.doctorName || 'No especificado',
         specialty: appointment.specialty,
         appointmentDate: appointment.appointmentDate,
         location: appointment.location || 'No especificada',

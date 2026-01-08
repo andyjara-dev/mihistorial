@@ -13,7 +13,8 @@ interface User {
 interface MedicalExam {
   id: string
   examType: string
-  institution: string
+  institution: string | null
+  laboratory?: string | null
   examDate: Date
   processingStatus: string
   aiProcessed: boolean
@@ -24,6 +25,8 @@ interface Appointment {
   doctorName: string
   specialty: string
   appointmentDate: Date
+  location?: string | null
+  institution?: string | null
   status: string
 }
 

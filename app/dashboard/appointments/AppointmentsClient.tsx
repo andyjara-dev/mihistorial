@@ -13,6 +13,7 @@ interface Appointment {
   specialty: string
   appointmentDate: Date
   location: string | null
+  institution?: string | null
   status: string
   sourceType: string
   sendReminders: boolean
