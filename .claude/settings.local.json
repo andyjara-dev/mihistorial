@@ -11,7 +11,22 @@
       "Bash(grep:*)",
       "Bash(npx prisma db push:*)",
       "Bash(wc:*)",
-      "Bash(npx prisma migrate:*)"
+      "Bash(npx prisma migrate:*)",
+      "Bash(git diff:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(if [ -f .env ])",
+      "Bash(then grep \"DATABASE_URL\" .env)",
+      "Bash(else echo \"No se encontró .env\")",
+      "Bash(fi)",
+      "Bash(npx ts-node:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(node /tmp/verify.mjs:*)",
+      "Bash(gpg --version:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: implementar encriptación completa de metadatos sensibles y backups seguros\n\n## 🔐 Seguridad de Metadatos\n- Agrega campos encryptedMetadata/metadataIv a MedicalExam, Appointment, Document\n- Encripta nombres de doctores, instituciones, ubicaciones, laboratorios, nombres de archivos\n- Funciones helper \\(lib/metadata-helpers.ts\\) para lectura con fallback a campos legacy\n- Mantiene compatibilidad con datos existentes mediante campos legacy opcionales\n\n## 🗄️ Migración de Datos\n- Script idempotente \\(scripts/migrate-metadata-encryption.ts\\) para encriptar datos existentes\n- Migración SQL segura \\(20260107_encrypt_metadata\\) con IF NOT EXISTS\n- Convierte campos a nullable para permitir transición gradual\n\n## 💾 Backups Encriptados\n- backup.sh ahora encripta con GPG antes de guardar\n- NO incluye archivo .env en backups \\(protege MASTER_ENCRYPTION_KEY\\)\n- Requiere clave GPG para restaurar backups\n- Documentación completa de proceso de backup/restauración\n\n## 🔧 Correcciones de Compatibilidad\n- Actualiza tipos TypeScript en componentes cliente para campos nullable\n- Corrige app/api/appointments/route.ts \\(código duplicado\\)\n- Actualiza app/api/exams/[id]/retry/route.ts para usar metadatos encriptados\n- Agrega fallbacks en appointment-reminders.ts\n- Desencripta metadatos en dashboard y páginas antes de renderizar\n\n## 📄 Archivos Modificados\nModificados:\n- lib/encryption.ts \\(3 funciones nuevas\\)\n- prisma/schema.prisma \\(campos de metadatos\\)\n- backup.sh \\(encriptación GPG\\)\n- 10 archivos de APIs y componentes\n\nNuevos:\n- lib/metadata-helpers.ts\n- scripts/migrate-metadata-encryption.ts\n- prisma/migrations/20260107_encrypt_metadata/\n- SEGURIDAD-MEJORAS-2026.md \\(documentación\\)\n\nSeguridad: Mejora protección de datos sensibles según estándares médicos\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

@@ -41,6 +41,8 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mts ./prisma.config.mts
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/scripts ./scripts
 
 # Copiar script de entrypoint
 COPY docker-entrypoint.sh ./
